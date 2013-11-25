@@ -41,7 +41,6 @@ public:
 
     // Same as render(f) but normalizes values to be in range (0,1) by dividing by max value
     CByteImage render(const Feature &f, bool normalizeFeat) const;
-
     std::vector<CByteImage> render(const FeaturePyramid &f, bool normalizeFeat) const;
 
     CByteImage renderPosNegComponents(const Feature &feat) const;

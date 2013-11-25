@@ -37,7 +37,11 @@ public:
     // single channel image with classifier output at each location.
     void predictSlidingWindow(const Feature &feat, CFloatImage &response) const;
 
-    void predictSlidingWindow(const FeaturePyramid &featPyr, SBFloatPyramid &responsePyr) const;
+    // Runs classifier on each level of the pyramid, returns a pyramid
+    // where each level contains the response of the classifier at the
+    // corresponding level of the input pyramid.
+    void predictSlidingWindow(const FeaturePyramid &featPyr,
+                              SBFloatPyramid &responsePyr) const;
 
     CShape getFeatureSupportShape() const
     {
