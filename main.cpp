@@ -16,10 +16,10 @@ printUsage(const std::string &execName)
 {
     printf("Usage:\n");
     printf("\t%s -h\n", execName.c_str());
-    printf("\t%s TRAIN   [-p <in:params>] [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
+    printf("\t%s TRAIN   -p <in:params> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
     printf("\t%s TRAIN   -f <feature type> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
     printf("\t%s PRED    <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
-    printf("\t%s PREDSL  [-p <in:params>]    <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s PREDSL  [-p <in:params>] <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
 }
 
 void
@@ -154,9 +154,8 @@ mainSVMPredictSlidingWindow(const std::vector<std::string> &args, const std::map
 
     std::string dbFName = args[2];
     std::string svmModelFName = args[3];
-    std::string prFName = (args.size() >= 4) ? args[4] : "";
-    std::string predsFName = (args.size() >= 5) ? args[5] : "";
-
+    std::string prFName = (args.size() >= 5) ? args[4] : "";
+    std::string predsFName = (args.size() >= 6) ? args[5] : "";
 
     ParametersMap imPyrParams = SBFloatPyramid::getDefaultParameters();
     ParametersMap obDetParams = ObjectDetector::getDefaultParameters();
@@ -179,8 +178,6 @@ mainSVMPredictSlidingWindow(const std::vector<std::string> &args, const std::map
         } else {
             PRINT_MSG("Using default parameters for NMS");
         }
-    } else {
-        throw CError("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
     }
 
     PRINT_MSG("Loading image database");
