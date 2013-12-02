@@ -50,8 +50,9 @@ ObjectDetector::operator()( const CFloatImage &svmResp, const Size &roiSize,
     // pixel at the center of the window is the local maxima and is also
     // greater than _respThresh. If so, create an instance of Detection and
     // store it in dets, remember to set the position of the central pixel
-    // (x,y), as well as the dimensions of the detection (use roiSize times
-    // the scale imScale), and the value of the central pixel in response.
+    // (x,y), as well as the dimensions of the detection (based on roiSize). Y
+    // ou will have to correct location and dimensions using a scale factor
+    // that is a function of featureScaleFactor and imScale.
 
     dets.resize(0);
 
