@@ -167,7 +167,7 @@ GUIController::GUIController():
 
         }
         _tabs->end();
-        //Fl_Group::current()->resizable(_tabs);
+        Fl_Group::current()->resizable(_tabs);
     }
     _mainWindow->end();
 }
