@@ -167,14 +167,14 @@ mainSVMPredictSlidingWindow(const std::vector<std::string> &args, const std::map
 
         if(allParams.count(IMAGE_PYRAMID_KEY)) {
             PRINT_MSG("Using image pyarmid paramaters from file ");
-            imPyrParams = allParams[FEATURE_EXTRACTOR_KEY];
+            imPyrParams = allParams[IMAGE_PYRAMID_KEY];
         } else {
             PRINT_MSG("Using default parameters for image pyaramid");
         }
 
         if(allParams.count(OBJECT_DETECTOR_KEY)) {
             PRINT_MSG("Using NMS paramaters from file ");
-            obDetParams = allParams[FEATURE_EXTRACTOR_KEY];
+            obDetParams = allParams[OBJECT_DETECTOR_KEY];
         } else {
             PRINT_MSG("Using default parameters for NMS");
         }
