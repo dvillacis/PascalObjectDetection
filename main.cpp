@@ -113,8 +113,8 @@ mainSVMPredict(const std::vector<std::string> &args, const std::map<std::string,
 
     std::string dbFName = args[2];
     std::string svmModelFName = args[3];
-    std::string prFName = (args.size() >= 4) ? args[4] : NULL;
-    std::string predsFName = (args.size() >= 5) ? args[5] : NULL;
+    std::string prFName = (args.size() >= 5) ? args[4] : "";
+    std::string predsFName = (args.size() >= 6) ? args[5] : "";
 
     CroppedImageDatabase db(dbFName.c_str());
     std::cout << db << std::endl;
