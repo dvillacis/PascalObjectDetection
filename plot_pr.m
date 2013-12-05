@@ -74,10 +74,10 @@ for k = 1:2:length(varargin)
             
             %plot(X, Y, 'LineWidth', 1.5);
             
-            sel = linspace(plot_num/100.0, 1, 10);
-            for ii = 1:length(sel)
-                sel(ii) = find(sel(ii) <= X, 1 );
-            end
+%             sel = linspace(plot_num/100.0, 1, 10);
+%             for ii = 1:length(sel)
+%                 sel(ii) = find(sel(ii) <= X, 1 );
+%             end
             
             plot(X, Y, '-', 'Color', colors(plot_num,:), 'LineWidth', 2);
             %plot(X(sel), Y(sel), linestyles{plot_num}, 'Color', colors(plot_num,:), 'MarkerFaceColor', [1 1 1]);

@@ -197,8 +197,14 @@ computeLabels(const std::vector<std::vector<Detection> > &gt, const std::vector<
     for(int i = 0; i < gt.size(); i++) {
 
         vector<float> resp, lab;
-        PRINT_EXPR(found.size());
-        computeLabels(gt[i], found[i], resp, lab);
+        computeLabels(gt[i], found[i], lab, resp);
+
+        int nCorrect = 0;
+        for(int j = 0; j < lab.size(); j++) {
+            if(lab[j] > 0) nCorrect++;
+        }
+
+        PRINT_MSG(nCorrect << "/" << found[i].size() << " detections are correct");
 
         response.insert(response.end(), resp.begin(), resp.end());
         label.insert(label.end(), lab.begin(), lab.end());
