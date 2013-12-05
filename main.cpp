@@ -222,10 +222,11 @@ mainSVMPredictSlidingWindow(const std::vector<std::string> &args, const std::map
 
     PRINT_MSG("Computing Precision Recall Curve");
     std::vector<float> labels, response;
-    computeLabels(db.getDetections(), predsDb.getDetections(), labels, response);
+    int nGroundTruthDetections;
+    computeLabels(db.getDetections(), predsDb.getDetections(), labels, response, nGroundTruthDetections);
 
     PRINT_MSG("Computing Precision Recall Curve");
-    PrecisionRecall pr(labels, response);
+    PrecisionRecall pr(labels, response, nGroundTruthDetections);
     PRINT_MSG("Average precision: " << pr.getAveragePrecision());
 
     if(predsFName.size()) predsDb.save(predsFName.c_str());

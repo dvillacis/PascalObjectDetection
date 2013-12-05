@@ -145,11 +145,6 @@ computeLabels(const std::vector<Detection> &gt, const std::vector<Detection> &fo
 
     sort(idxResp.begin(), idxResp.end(), sortByResponse);
 
-    // debug
-    for(int i = 0; i < idxResp.size() - 1; i++) {
-        assert(idxResp[i].second >= idxResp[i + 1].second);
-    }
-
     label = vector<float>(found.size(), -1);
     response = vector<float>(found.size(), 0);
 
@@ -159,6 +154,8 @@ computeLabels(const std::vector<Detection> &gt, const std::vector<Detection> &fo
         int idx = idxResp[i].first;
 
         const Detection &det = found[idx];
+
+        assert(det.response == idxResp[i].second);
 
         response[idx] = det.response;
 
@@ -186,15 +183,17 @@ computeLabels(const std::vector<Detection> &gt, const std::vector<Detection> &fo
 
 void
 computeLabels(const std::vector<std::vector<Detection> > &gt, const std::vector<std::vector<Detection> > &found,
-              std::vector<float> &label, std::vector<float> &response)
+              std::vector<float> &label, std::vector<float> &response, int& nDets)
 {
     using namespace std;
     assert(gt.size() == found.size());
 
     response.resize(0);
     label.resize(0);
+    nDets = 0;
 
     for(int i = 0; i < gt.size(); i++) {
+        nDets += gt[i].size();
 
         vector<float> resp, lab;
         computeLabels(gt[i], found[i], lab, resp);
@@ -204,7 +203,7 @@ computeLabels(const std::vector<std::vector<Detection> > &gt, const std::vector<
             if(lab[j] > 0) nCorrect++;
         }
 
-        PRINT_MSG(nCorrect << "/" << found[i].size() << " detections are correct");
+        PRINT_MSG(nCorrect << "/" << lab.size() << " detections matched");
 
         response.insert(response.end(), resp.begin(), resp.end());
         label.insert(label.end(), lab.begin(), lab.end());
