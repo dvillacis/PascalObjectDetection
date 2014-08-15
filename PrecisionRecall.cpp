@@ -1,8 +1,6 @@
 #include "PrecisionRecall.h"
 
-static
-void
-computePrecisionRecallForThreshold(const std::vector<float> &gt, const std::vector<float>& preds, 
+static void computePrecisionRecallForThreshold(const std::vector<float> &gt, const std::vector<float>& preds, 
 	                               float threshold, int nGroundTruthDetections, float& precision, float& recall)
 {
 	// Compute tp, fp, fn, tn
@@ -26,8 +24,7 @@ computePrecisionRecallForThreshold(const std::vector<float> &gt, const std::vect
 	else recall = float(truePos) / nGt;
 }
 
-bool
-sortByRecall(const PecisionRecallPoint& a, const PecisionRecallPoint& b)
+bool sortByRecall(const PecisionRecallPoint& a, const PecisionRecallPoint& b)
 {
 	return a.recall < b.recall;
 }

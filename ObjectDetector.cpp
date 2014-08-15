@@ -39,8 +39,8 @@ ObjectDetector::ObjectDetector(int winSizeNMS, double respThresh, double overlap
 }
 
 void
-ObjectDetector::operator()( const CFloatImage &svmResp, const Size &roiSize,
-                            double featureScaleFactor, std::vector<Detection> &dets,
+ObjectDetector::operator()( const CFloatImage &svmResp, double featureScaleFactor, 
+                            std::vector<Detection> &dets,
                             double imScale ) const
 {
     /******** BEGIN TODO ********/
@@ -67,44 +67,44 @@ sortByResponse(const Detection &d1, const Detection &d2)
     return d1.response >= d2.response;
 }
 
-void
-ObjectDetector::operator()( const SBFloatPyramid &svmRespPyr, const Size &roiSize,
-                            double featureScaleFactor, std::vector<Detection> &dets ) const
-{
-    /******** BEGIN TODO ********/
-    // Non-Maxima Suppression across pyramid levels
-    //
-    // Given the pyramid of SVM responses, for each level you will find
-    // the non maximas within a window of size _winSizeNMS by _winSizeNMS.
-    // This functionality is impelmented in the other operator() method above.
-    // Once all detections for all levels are found we perform another round of
-    // non maxima suppression, this time across all levels. In this step you will
-    // use the relativeOverlap method from the class Detection to determine if
-    // a detection "competes" with another. If there is enough overlap between them
-    // (i.e., if the relative overlap is greater then _overlapThresh) then only the
-    // detection with strongest response is kept.
-    //
-    // Steps are:
-    // 1) Find the local maxima per level of the pyramid for all levels
-    // 2) Perform non maxima suppression across levels
-    //
-    // Useful functions:
-    // sortByResponse, relativeOverlap, opreator()
+// void
+// ObjectDetector::operator()( const SBFloatPyramid &svmRespPyr, const Size &roiSize,
+//                             double featureScaleFactor, std::vector<Detection> &dets ) const
+// {
+//     /******** BEGIN TODO ********/
+//     // Non-Maxima Suppression across pyramid levels
+//     //
+//     // Given the pyramid of SVM responses, for each level you will find
+//     // the non maximas within a window of size _winSizeNMS by _winSizeNMS.
+//     // This functionality is impelmented in the other operator() method above.
+//     // Once all detections for all levels are found we perform another round of
+//     // non maxima suppression, this time across all levels. In this step you will
+//     // use the relativeOverlap method from the class Detection to determine if
+//     // a detection "competes" with another. If there is enough overlap between them
+//     // (i.e., if the relative overlap is greater then _overlapThresh) then only the
+//     // detection with strongest response is kept.
+//     //
+//     // Steps are:
+//     // 1) Find the local maxima per level of the pyramid for all levels
+//     // 2) Perform non maxima suppression across levels
+//     //
+//     // Useful functions:
+//     // sortByResponse, relativeOverlap, opreator()
 
-    dets.resize(0);
+//     dets.resize(0);
 
-    // Find detections per level
-    std::vector<Detection> allDets;
-    for (int i = 0; i < svmRespPyr.getNLevels(); i++) {
+//     // Find detections per level
+//     std::vector<Detection> allDets;
+//     for (int i = 0; i < svmRespPyr.getNLevels(); i++) {
 
-        std::vector<Detection> levelDets;
-        this->operator()(svmRespPyr[i], roiSize, featureScaleFactor, levelDets, svmRespPyr.levelScale(i));
+//         std::vector<Detection> levelDets;
+//         this->operator()(svmRespPyr[i], roiSize, featureScaleFactor, levelDets, svmRespPyr.levelScale(i));
 
-        allDets.insert(allDets.end(), levelDets.begin(), levelDets.end());
-    }
+//         allDets.insert(allDets.end(), levelDets.begin(), levelDets.end());
+//     }
 
-printf("TODO: %s:%d\n", __FILE__, __LINE__); 
+// printf("TODO: %s:%d\n", __FILE__, __LINE__); 
 
-    /******** END TODO ********/
-}
+//     /******** END TODO ********/
+// }
 

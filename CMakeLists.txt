@@ -2,77 +2,27 @@ PROJECT(objdet)
 
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-# Options for Mac OS X
-# FIXME: Should do this only if generating for XCode
-#SET(CMAKE_OSX_SYSROOT "") # Set to "Current OS X" 
-
 # Where to search for cmake scripts
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Check for dependencies (Ref: http://www.cmake.org/Wiki/CMakeForFLTK)
 # http://stackoverflow.com/questions/9779901/setting-up-fltk-on-windows-with-cmake
 
-IF(WIN32)
-	# FILTK
-	# Find path sets FLTK_INCLUDE_DIR which in turn is used by FIND_PACKAGE when
-	# searching for FLTK.
-	FIND_PATH(FLTK_INCLUDE_DIR
-  		NAMES FL/Fl.H
-		PATHS "winlibs\\FLTK\\"
-	)
+FIND_PACKAGE(OpenCV REQUIRED)
+FIND_PACKAGE(JPEG REQUIRED)
+FIND_PACKAGE(GLOG REQUIRED)
+SET(Boost_USE_STATIC_LIBS OFF) 
+SET(Boost_USE_MULTITHREADED ON)  
+SET(Boost_USE_STATIC_RUNTIME OFF) 
+FIND_PACKAGE(Boost 1.56.0 COMPONENTS filesystem system REQUIRED)
+IF(Boost_FOUND)
+	INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
+	MESSAGE(status " Boost libs: " ${Boost_LIBRARIES})
+ENDIF()
 
-	# JPEG
-	FIND_PATH(JPEG_INCLUDE_DIR
-  		NAMES jpeglib.h
-		PATHS "winlibs\\libjpeg-turbo\\include\\"
-	)
-
-	FIND_LIBRARY(JPEG_LIBRARY
-		NAMES jpeg-static.lib
-		PATHS "winlibs\\libjpeg-turbo\\lib\\"
-	)
-ELSE(WIN32)
-	FIND_PACKAGE(JPEG REQUIRED)
-	LIST(APPEND CMAKE_CXX_FLAGS "-Wall")
-ENDIF(WIN32)
-
-# FLTK
-SET(FLTK_SKIP_FLUID true)
-FIND_PACKAGE(FLTK REQUIRED)	
-INCLUDE_DIRECTORIES(${FLTK_INCLUDE_DIR})
-IF(WIN32)
-	SET(FLTK_LIB_PATH "winlibs\\FLTK\\lib\\")
-
-	# For some reason find_package(fltk) wont include these
-	# libraries in FLTK_LIBRARIES so I add them here.
-	FIND_LIBRARY(FLTK_Z_LIB
-	  NAMES fltkzlib fltkzlibd
-	  PATHS ${FLTK_LIB_PATH}
-	)
-
-	FIND_LIBRARY(FLTK_JPEG_LIB
-	  NAMES fltkjpeg fltkjpegd
-	  PATHS ${FLTK_LIB_PATH}
-	)
-
-	FIND_LIBRARY(FLTK_PNG_LIB
-	  NAMES fltkpng fltkpngd
-	  PATHS ${FLTK_LIB_PATH}
-	)
-
-    LIST(APPEND FLTK_LIBRARIES ${FLTK_PNG_LIB} ${FLTK_JPEG_LIB} ${FLTK_Z_LIB})
-ELSE(WIN32)
-	FIND_PACKAGE(PNG REQUIRED)
-    LIST(APPEND FLTK_LIBRARIES ${PNG_LIBRARIES})
-ENDIF(WIN32)
+LIST(APPEND CMAKE_CXX_FLAGS "-Wall")
 
 FIND_PACKAGE(OpenGL REQUIRED)
-
-IF(CMAKE_SYSTEM_NAME STREQUAL Linux)
-	# Not sure why we need this one
-	FIND_LIBRARY(LD_LIB NAMES dl)
-    LIST(APPEND FLTK_LIBRARIES ${LD_LIB})
-ENDIF()
 
 # # Build subdirectories
 ADD_SUBDIRECTORY(thirdparty/ImageLib)
@@ -84,7 +34,7 @@ ADD_LIBRARY(od
     Utils.h                                             Utils.cpp
 	Feature.h                                           Feature.cpp 
 	SupportVectorMachine.h                              SupportVectorMachine.cpp 
-	CroppedImageDatabase.h                              CroppedImageDatabase.cpp 
+	PascalImageDatabase.h                               PascalImageDatabase.cpp 
 	ImageDatabase.h                                     ImageDatabase.cpp 
 	PrecisionRecall.h                                   PrecisionRecall.cpp
 	ObjectDetector.h                                    ObjectDetector.cpp
@@ -95,15 +45,8 @@ ADD_LIBRARY(od
 	Common.h    
 )
 
-TARGET_LINK_LIBRARIES(od image svm jpegrw ${JPEG_LIBRARY})
-
-SET(GUI_SRC 
-    GUIController.h                                     GUIController.cpp 
-    GUIModel.h                                          GUIModel.cpp 
-    ImageView.h                                         ImageView.cpp
-    ImageViewGL.h                                       ImageViewGL.cpp
-    ControlsBox.h                                       ControlsBox.cpp)
+TARGET_LINK_LIBRARIES(od image svm jpegrw ${JPEG_LIBRARY} ${OpenCV_LIBS})
 
 # # Building the project 
-ADD_EXECUTABLE(objdet main.cpp ${GUI_SRC})
-TARGET_LINK_LIBRARIES(objdet od ${FLTK_LIBRARIES} ${JPEG_LIBRARY} ${OPENGL_LIBRARIES})
+ADD_EXECUTABLE(objdet main.cpp)
+TARGET_LINK_LIBRARIES(objdet od ${JPEG_LIBRARY} ${OPENGL_LIBRARIES} ${Boost_LIBRARIES} ${GLOG_LIB_1} ${GLOG_LIB_2} ${GLOG_LIB_3} ${GLOG_LIB_4} ${GLOG_LIB_5} ${GLOG_LIB_6} ${GLOG_LIB_7})

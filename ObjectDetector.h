@@ -27,7 +27,7 @@ public:
     //
     // OUTPUT
     // dets                vector of detections
-    void operator()( const CFloatImage &svmResp, const Size &roiSize, double featureScaleFactor,
+    void operator()( const CFloatImage &svmResp, double featureScaleFactor,
                      std::vector<Detection> &dets, double imScale = 1.0 ) const;
 
     // Perform NMS over all levels of the response pyramid svmRespPyr
@@ -39,8 +39,8 @@ public:
     //
     // OUTPUT
     // dets                vector with final detections
-    void operator()( const SBFloatPyramid &svmRespPyr, const Size &roiSize,
-                     double featureScaleFactor, std::vector<Detection> &dets ) const;
+    // void operator()( const SBFloatPyramid &svmRespPyr, const Size &roiSize,
+    //                  double featureScaleFactor, std::vector<Detection> &dets ) const;
 
 private:
     int _winSizeNMS;

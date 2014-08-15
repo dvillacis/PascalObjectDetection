@@ -21,6 +21,16 @@
 #include <cmath>
 #include <stdint.h>
 
+// Boost 
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
+
+// Google Log
+#include <glog/logging.h>
+
+// Open CV
+#include <opencv2/opencv.hpp>
+
 // Image Lib
 #include "ImageLib/ImageLib.h"
 
@@ -70,17 +80,6 @@
 // Spacing (in pixels) between elements in the GUI
 static const int DEFAULT_BORDER = 5;
 static const int BOX_WIDTH = 2; // Border around the box that Fl draws (guessing)
-
-// ============================================================================
-// MISC
-// ============================================================================
-
-class Size
-{
-public:
-    Size(): width(0), height(0) {}
-    double width, height;
-};
 
 // ============================================================================
 // Persistence
