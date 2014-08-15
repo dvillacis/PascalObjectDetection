@@ -1,5 +1,7 @@
 #include "Detection.h"
 
+using namespace cv;
+
 Detection::Detection():
     x(0), y(0), response(0), width(0), height(0)
 {}
@@ -44,50 +46,45 @@ public:
     uint8_t r, g, b;
 };
 
-static
-void
-drawHorizLine(CByteImage &img, int xStart, int xEnd, int y, const Color &color)
+static void drawHorizLine(Mat &img, int xStart, int xEnd, int y, const Color &color)
 {
-    CShape shape = img.Shape();
-    assert(shape.nBands == 3);
+    // CShape shape = img.Shape();
+    // assert(shape.nBands == 3);
 
-    if(y < 0 || y >= shape.height) return;
+    // if(y < 0 || y >= shape.height) return;
 
-    xStart = std::max(0, xStart);
-    xEnd = std::min(xEnd, shape.width - 1);
+    // xStart = std::max(0, xStart);
+    // xEnd = std::min(xEnd, shape.width - 1);
 
-    char *pix = (char *)img.PixelAddress(xStart, y, 0);
-    for (int i = 0; i < (xEnd - xStart); i++, pix += 3) {
-        pix[0] = color.b;
-        pix[1] = color.g;
-        pix[2] = color.r;
-    }
+    // char *pix = (char *)img.PixelAddress(xStart, y, 0);
+    // for (int i = 0; i < (xEnd - xStart); i++, pix += 3) {
+    //     pix[0] = color.b;
+    //     pix[1] = color.g;
+    //     pix[2] = color.r;
+    // }
 }
 
-static
-void
-drawVertLine(CByteImage &img, int x, int yStart, int yEnd, const Color &color)
+static void drawVertLine(Mat &img, int x, int yStart, int yEnd, const Color &color)
 {
-    CShape shape = img.Shape();
-    assert(shape.nBands == 3);
+    // CShape shape = img.Shape();
+    // assert(shape.nBands == 3);
 
-    if(x < 0 || x >= shape.width) return;
+    // if(x < 0 || x >= shape.width) return;
 
-    yStart = std::max(0, yStart);
-    yEnd = std::min(yEnd, shape.height - 1);
+    // yStart = std::max(0, yStart);
+    // yEnd = std::min(yEnd, shape.height - 1);
 
-    //char* pix = (char*)img.PixelAddress(x, yStart, 0);
-    for (int i = 0; i < (yEnd - yStart); i++) { //, pix += stride) {
-        char *pix = (char *)img.PixelAddress(x, yStart + i, 0);
+    // //char* pix = (char*)img.PixelAddress(x, yStart, 0);
+    // for (int i = 0; i < (yEnd - yStart); i++) { //, pix += stride) {
+    //     char *pix = (char *)img.PixelAddress(x, yStart + i, 0);
 
-        pix[0] = color.b;
-        pix[1] = color.g;
-        pix[2] = color.r;
-    }
+    //     pix[0] = color.b;
+    //     pix[1] = color.g;
+    //     pix[2] = color.r;
+    // }
 }
 
-void
-Detection::draw(CByteImage &img) const
+void Detection::draw(Mat &img) const
 {
     static const Color red(255, 50, 50);
     // Bounding box
@@ -103,8 +100,7 @@ Detection::draw(CByteImage &img) const
     drawVertLine(img, x, y - crossSize, y + crossSize, red);
 }
 
-void
-drawDetections(CByteImage &img, const std::vector<Detection> &dets)
+void drawDetections(Mat &img, const std::vector<Detection> &dets)
 {
     for(std::vector<Detection>::const_iterator det = dets.begin(), detEnd = dets.end(); det != detEnd; det++) {
         det->draw(img);
@@ -138,9 +134,9 @@ computeLabels(const std::vector<Detection> &gt, const std::vector<Detection> &fo
     const double overlapThresh = 0.5;
 
     vector<float> labels;
-    vector<pair<int, float> > idxResp(found.size());
+    vector<std::pair<int, float> > idxResp(found.size());
     for (int i = 0; i < found.size(); i++) {
-        idxResp[i] = pair<int, float>(i, found[i].response);
+        idxResp[i] = std::pair<int, float>(i, found[i].response);
     }
 
     sort(idxResp.begin(), idxResp.end(), sortByResponse);

@@ -38,8 +38,7 @@ ObjectDetector::ObjectDetector(int winSizeNMS, double respThresh, double overlap
 {
 }
 
-void
-ObjectDetector::operator()( const CFloatImage &svmResp, double featureScaleFactor, 
+void ObjectDetector::operator()( const cv::Mat &svmResp, double featureScaleFactor, 
                             std::vector<Detection> &dets,
                             double imScale ) const
 {

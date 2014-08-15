@@ -31,15 +31,13 @@ INCLUDE_DIRECTORIES(thirdparty/)
 ADD_SUBDIRECTORY(thirdparty/libsvm-3.14)
 
 ADD_LIBRARY(od
-    Utils.h                                             Utils.cpp
 	Feature.h                                           Feature.cpp 
 	SupportVectorMachine.h                              SupportVectorMachine.cpp 
 	PascalImageDatabase.h                               PascalImageDatabase.cpp 
 	ImageDatabase.h                                     ImageDatabase.cpp 
 	PrecisionRecall.h                                   PrecisionRecall.cpp
 	ObjectDetector.h                                    ObjectDetector.cpp
-	Detection.h                                         Detection.cpp
-	SubBandImagePyramid.h    SubBandImagePyramid.inl    
+	Detection.h                                         Detection.cpp   
 	FileIO.h                                            FileIO.cpp
 	ParametersMap.h                                     ParametersMap.cpp
 	Common.h    

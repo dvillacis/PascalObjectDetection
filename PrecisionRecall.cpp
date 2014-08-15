@@ -51,8 +51,8 @@ PrecisionRecall::PrecisionRecall(const std::vector<float> &gt, const std::vector
 	// Remove jags in precision recall curve
 	float maxPrecision = -1;
 	for(std::vector<PecisionRecallPoint>::reverse_iterator pr = _data.rbegin(); pr != _data.rend(); pr++) {
-		pr->precision = max(maxPrecision, pr->precision);
-		maxPrecision = max(pr->precision, maxPrecision);
+		pr->precision = std::max(maxPrecision, pr->precision);
+		maxPrecision = std::max(pr->precision, maxPrecision);
 	}
 
 	// Compute average precision as area under the curve
@@ -70,7 +70,7 @@ PrecisionRecall::save(const char* filename) const
 {
 	std::ofstream f(filename);
 
-	if(f.bad()) throw CError("Could not open file %s for writing", filename);
+	if(f.bad()) throw "Could not open file " + (std::string)filename + " for writing";
 
 	f << "# precision recall threshold\n";
 	for(std::vector<PecisionRecallPoint>::const_iterator pr = _data.begin(); pr != _data.end(); pr++) {

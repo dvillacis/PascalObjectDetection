@@ -1,10 +1,8 @@
 #include "Common.h"
-#include "Utils.h"
 #include "Feature.h"
 #include "SupportVectorMachine.h"
 #include "PrecisionRecall.h"
 #include "ObjectDetector.h"
-#include "SubBandImagePyramid.h"
 #include "FileIO.h"
 #include "ImageDatabase.h"
 
@@ -40,7 +38,7 @@ void parseCommandLineOptions(int argc, char **argv, vector<std::string> &args, m
 int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
 {
     if(args.size() < 3) {
-        throw CError("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
     string dbFName = args[2];
@@ -66,11 +64,29 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
             LOG(INFO) << "Using default parameters for feature extractor";
         }
     } else {
-        throw CError("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
-    double svmC = 0.01;
-    if(opts.count("-c") == 1) svmC = atof(opts.at("-c").c_str());
+    // SVM Parameter definition
+    svm_parameter parameter;
+    parameter.svm_type = C_SVC;
+    parameter.kernel_type = LINEAR;
+    parameter.degree = 0;
+    parameter.gamma = 0;
+    parameter.coef0 = 0;
+    parameter.nu = 0.5;
+    parameter.cache_size = 100;  // In MB
+    parameter.C = 0.01;
+    parameter.eps = 1e-3;
+    parameter.p = 0.1;
+    parameter.shrinking = 1;
+    parameter.probability = 0;
+    parameter.nr_weight = 0; // ?
+    parameter.weight_label = NULL;
+    parameter.weight = NULL;
+
+    // double svmC = 0.01;
+    // if(opts.count("-c") == 1) svmC = atof(opts.at("-c").c_str());
 
     FeatureExtractor *featExtractor = FeatureExtractor::create(featParams);
 
@@ -83,7 +99,7 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     LOG(INFO) << "Training SVM";
     SupportVectorMachine svm;
 
-    svm.train(db.getLabels(), features, svmC);
+    svm.train(db.getLabels(), features, parameter);
 
     saveToFile(svmModelFName, svm, featExtractor);
 
@@ -94,7 +110,7 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
 int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
 {
     if(args.size() < 3 || args.size() > 6) {
-        throw CError("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
     string dbFName = args[2];
@@ -134,7 +150,7 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
 {
     // Detection over multiple scales with non maxima suppression
     if(args.size() < 4) {
-        throw CError("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
     string dbFName = args[2];
@@ -242,8 +258,8 @@ int main(int argc, char **argv)
             return EXIT_FAILURE;
         }
 
-    } catch(CError err) {
-        LOG(ERROR) << "ERROR: Uncought exception: " << err.message << endl;
+    } catch(std::exception err) {
+        LOG(ERROR) << "ERROR: Uncought exception: " << err.what() << endl;
         return EXIT_FAILURE;
     }
 

@@ -5,7 +5,7 @@ saveToFile(const std::string &filename, const SupportVectorMachine &svm, const F
 {
     FILE *f = fopen(filename.c_str(), "wb");
     if(f == NULL) {
-        throw CError("Could not open file %s for writing", filename.c_str());
+        throw "Could not open file " + filename + " for writing";
     }
 
     FeatureExtractor::save(f, feat);
@@ -19,7 +19,7 @@ loadFromFile(const std::string &filename, SupportVectorMachine &svm, FeatureExtr
 {
     FILE *f = fopen(filename.c_str(), "rb");
     if(f == NULL) {
-        throw CError("Could not open file %s for reading", filename.c_str());
+        throw "Could not open file " + filename + " for reading";
     }
 
     char buff[100];

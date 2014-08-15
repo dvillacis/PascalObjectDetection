@@ -32,7 +32,7 @@
 #include <opencv2/opencv.hpp>
 
 // Image Lib
-#include "ImageLib/ImageLib.h"
+//#include "ImageLib/ImageLib.h"
 
 // Library for Support Vector Machine algo
 #include "libsvm-3.14/svm.h"

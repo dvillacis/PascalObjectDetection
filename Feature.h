@@ -2,9 +2,8 @@
 #define FEATURE_H
 
 #include "Common.h"
-#include "Utils.h"
 #include "PascalImageDatabase.h"
-#include "SubBandImagePyramid.h"
+#include "ParametersMap.h"
 
 using namespace cv;
 
@@ -115,8 +114,8 @@ private:
     bool _unsignedGradients;              // If true then we only consider the orientation modulo 180 degrees (i.e., 190
     // degrees is considered the same as 10 degrees)
     int _cellSize;                        // Support size of a cell, in pixels
-    Mat _kernelDx, _kernelDy;     // Derivative kernels in x and y directions
-    std::vector<CFloatImage> _oriMarkers; // Used for visualization
+    // Mat _kernelDx, _kernelDy;     // Derivative kernels in x and y directions
+    // std::vector<CFloatImage> _oriMarkers; // Used for visualization
     HOGDescriptor _hog;
 
 public:

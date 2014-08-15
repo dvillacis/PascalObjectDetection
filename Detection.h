@@ -9,7 +9,7 @@ public:
     Detection();
     Detection(double x, double y, double resp, double width, double height);
 
-    void draw(CByteImage &img) const;
+    void draw(cv::Mat &img) const;
 
     double relativeOverlap(const Detection &other) const;
     double area() const;
@@ -22,7 +22,7 @@ public:
 std::ostream &operator<<(std::ostream &s, const Detection &d);
 std::istream &operator>>(std::istream &s, Detection &d);
 
-void drawDetections(CByteImage &img, const std::vector<Detection> &dets);
+void drawDetections(cv::Mat &img, const std::vector<Detection> &dets);
 
 // Determine if each detection in found is a match or not. Returns label and response,
 // both with the same number of elements as found. Each entry in the vector label is -1

@@ -64,7 +64,7 @@ void PascalImageDatabase::load(const char *dbFilename)
 
     ifstream f(dbFilename);
     if(!f.is_open()) {
-        throw CError("Could not open file %s for reading", dbFilename);
+        throw "Could not open file " + (string)dbFilename + " for reading";
     }
     else{
         string line;
@@ -102,7 +102,7 @@ PascalImageDatabase::save(const char *dbFilename)
 {
     ofstream f(dbFilename);
     if(!f.is_open()) {
-        throw CError("Could not open file %s for writing", dbFilename);
+        throw "Could not open file " + (string)dbFilename + " for writing";
     }
 
     for(int i = 0; i < _labels.size(); i++) {

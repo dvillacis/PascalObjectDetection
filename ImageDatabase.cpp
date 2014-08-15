@@ -1,39 +1,41 @@
 #include "ImageDatabase.h"
 
+using namespace std;
+
 static const char *SIGNATURE = "ImageDataset";
 
 ImageDatabase::ImageDatabase()
 {
 }
 
-ImageDatabase::ImageDatabase(const std::string &dbFilename)
+ImageDatabase::ImageDatabase(const string &dbFilename)
 {
     load(dbFilename);
 }
 
-ImageDatabase::ImageDatabase(const std::vector<std::vector<Detection> > &dets,
-                             const std::vector<std::string> &fnames):
+ImageDatabase::ImageDatabase(const vector<vector<Detection> > &dets,
+                             const vector<string> &fnames):
     _detections(dets),
     _filenames(fnames)
 {
 }
 
 void
-ImageDatabase::load(const std::string &dbFilename)
+ImageDatabase::load(const string &dbFilename)
 {
     _dbFilename = dbFilename;
 
     ifstream f(dbFilename.c_str());
     if(!f.is_open()) {
-        throw CError("Could not open file %s for reading", dbFilename.c_str());
+        throw "Could not open file " + dbFilename + " for reading";
     }
 
-    char sig[200];
-    f.read(sig, strlen(SIGNATURE));
-    sig[strlen(SIGNATURE)] = '\0';
-    if (strcmp(sig, SIGNATURE) != 0) {
-        throw CError("Bad signature for file, expecting \"%s\" but got \"%s\"", SIGNATURE, sig);
-    }
+    // char sig[200];
+    // f.read(sig, strlen(SIGNATURE));
+    // sig[strlen(SIGNATURE)] = '\0';
+    // if (strcmp(sig, SIGNATURE) != 0) {
+    //     throw "Bad signature for file, expecting \"%s\" but got \"%s\"", SIGNATURE, sig);
+    // }
 
     int nItems;
     f >> nItems;
@@ -54,11 +56,11 @@ ImageDatabase::load(const std::string &dbFilename)
 }
 
 void
-ImageDatabase::save(const std::string &dbFilename)
+ImageDatabase::save(const string &dbFilename)
 {
     ofstream f(dbFilename.c_str());
     if(!f.is_open()) {
-        throw CError("Could not open file %s for writing", dbFilename.c_str());
+        throw "Could not open file " + dbFilename + " for writing";
     }
 
     f << SIGNATURE << "\n";

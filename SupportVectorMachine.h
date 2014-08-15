@@ -23,7 +23,7 @@ public:
     SupportVectorMachine(const std::string &modelFName);
     ~SupportVectorMachine();
 
-    void train(const std::vector<float> &labels, const FeatureCollection &fset, double C = 0.01);
+    void train(const std::vector<float> &labels, const FeatureCollection &fset, svm_parameter parameter);
 
     // Run classifier on feature, size of feature must match one used for
     // model training
@@ -38,11 +38,6 @@ public:
     // where each level contains the response of the classifier at the
     // corresponding level of the input pyramid.
     //void predictSlidingWindow(const FeaturePyramid &featPyr, SBFloatPyramid &responsePyr) const;
-
-    CShape getFeatureSupportShape() const
-    {
-        return CShape(_fVecShape.width, _fVecShape.height, 1);
-    }
 
     // Get SVM weights in the shape of the original features
     Feature getWeights() const;

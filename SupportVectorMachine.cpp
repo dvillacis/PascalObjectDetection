@@ -27,9 +27,9 @@ SupportVectorMachine::~SupportVectorMachine()
     _deinit();
 }
 
-void SupportVectorMachine::train(const std::vector<float> &labels, const FeatureCollection &fset, double C)
+void SupportVectorMachine::train(const std::vector<float> &labels, const FeatureCollection &fset, svm_parameter parameter)
 {
-    if(labels.size() != fset.size()) throw CError("Database size is different from feature set size!");
+    if(labels.size() != fset.size()) throw "Database size is different from feature set size!";
 
     // _fVecShape = fset[0].Shape();
     // if(roiSize.width != 0 && roiSize.height != 0) {
@@ -45,22 +45,21 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
     int dim = shape.width * shape.height;
 
     // Parameters for SVM
-    svm_parameter parameter;
-    parameter.svm_type = C_SVC;
-    parameter.kernel_type = LINEAR;
-    parameter.degree = 0;
-    parameter.gamma = 0;
-    parameter.coef0 = 0;
-    parameter.nu = 0.5;
-    parameter.cache_size = 100;  // In MB
-    parameter.C = C;
-    parameter.eps = 1e-3;
-    parameter.p = 0.1;
-    parameter.shrinking = 1;
-    parameter.probability = 0;
-    parameter.nr_weight = 0; // ?
-    parameter.weight_label = NULL;
-    parameter.weight = NULL;
+    // parameter.svm_type = C_SVC;
+    // parameter.kernel_type = LINEAR;
+    // parameter.degree = 0;
+    // parameter.gamma = 0;
+    // parameter.coef0 = 0;
+    // parameter.nu = 0.5;
+    // parameter.cache_size = 100;  // In MB
+    // parameter.C = C;
+    // parameter.eps = 1e-3;
+    // parameter.p = 0.1;
+    // parameter.shrinking = 1;
+    // parameter.probability = 0;
+    // parameter.nr_weight = 0; // ?
+    // parameter.weight_label = NULL;
+    // parameter.weight = NULL;
     //cross_validation = 0;
 
     // Allocate memory
@@ -162,16 +161,14 @@ std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset) 
 double SupportVectorMachine::getBiasTerm() const
 {
     if(_model == NULL)
-        throw CError("Asking for SVM bias term but there is no "
-                     "model. Either load one from file or train one before.");
+        throw "Asking for SVM bias term but there is no model. Either load one from file or train one before.";
     return _model->rho[0];
 }
 
 Feature SupportVectorMachine::getWeights() const
 {
     if(_model == NULL)
-        throw CError("Asking for SVM weights but there is no model. Either "
-                     "load one from file or train one before.");
+        throw "Asking for SVM weights but there is no model. Either load one from file or train one before.";
 
     Feature weightVec = Mat::zeros(_fVecShape.width,_fVecShape.height,CV_32FC2);
 
@@ -199,7 +196,7 @@ Feature SupportVectorMachine::getWeights() const
 void SupportVectorMachine::load(const std::string &filename)
 {
     FILE *f = fopen(filename.c_str(), "rb");
-    if(f == NULL) throw CError("Failed to open file %s for reading", filename.c_str());
+    if(f == NULL) throw "Failed to open file " + filename + " for reading";
     this->load(f);
 }
 
@@ -210,19 +207,19 @@ void SupportVectorMachine::load(FILE *fp)
     // fscanf(fp, "%lf %lf", &_roiSize.width, &_roiSize.height);
     _model = svm_load_model_fp(fp);
     if(_model == NULL) {
-        throw CError("Failed to load SVM model");
+        throw "Failed to load SVM model";
     }
 }
 
 void SupportVectorMachine::save(FILE *fp) const
 {
-    if(_model == NULL) throw CError("No model to be saved");
+    if(_model == NULL) throw "No model to be saved";
 
     // fprintf(fp, "%d %d %d\n", _fVecShape.width, _fVecShape.height, _fVecShape.nBands);
     // fprintf(fp, "%lf %lf\n", _roiSize.width, _roiSize.height);
 
     if(svm_save_model_fp(fp, _model) != 0) {
-        throw CError("Error while trying to write model to file");
+        throw "Error while trying to write model to file";
     }
 }
 
@@ -230,12 +227,12 @@ void SupportVectorMachine::save(const std::string &filename) const
 {
     FILE *fp = fopen(filename.c_str(), "wb");
     if(fp == NULL) {
-        throw CError("Could not open file %s for writing.", filename.c_str());
+        throw "Could not open file " + filename + " for writing.";
     }
 
     save(fp);
     if (ferror(fp) != 0 || fclose(fp) != 0) {
-        throw CError("Error while closing file %s", filename.c_str());
+        throw "Error while closing file " + filename;
     }
 }
 

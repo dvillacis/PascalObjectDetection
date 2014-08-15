@@ -14,7 +14,7 @@ ParametersMap::save(const std::string &fname) const
 {
     FILE *f = fopen(fname.c_str(), "w");
     if(f == NULL) {
-        throw CError("Could not open file %s for writing", fname.c_str());
+        throw "Could not open file " + fname + " for writing";
     }
 
     save(f);
@@ -89,7 +89,7 @@ saveToFile(const std::string &fname, const std::map<std::string, ParametersMap> 
 
     FILE *f = fopen(fname.c_str(), "w");
     if(f == NULL) {
-        throw CError("Could not open file %s for writing", fname.c_str());
+        throw "Could not open file " + fname + " for writing";
     }
 
     fprintf(f, "%d\n", params.size());
@@ -108,7 +108,7 @@ loadFromFile(const std::string &fname, std::map<std::string, ParametersMap> &par
 
     FILE *f = fopen(fname.c_str(), "r");
     if(f == NULL) {
-        throw CError("Could not open file %s for reading", fname.c_str());
+        throw "Could not open file " + fname + " for reading";
     }
 
     int nParamMaps = 0;
