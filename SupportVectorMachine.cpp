@@ -1,9 +1,72 @@
 #include "SupportVectorMachine.h"
 
+const char *SVM_TYPE        = "svm_type";
+const char *KERNEL_TYPE     = "kernel_type";
+const char *DEGREE          = "degree";
+const char *GAMMA           = "gamma";
+const char *COEF0           = "coef0";
+const char *NU              = "nu";
+const char *CACHE_SIZE      = "cache_size";
+const char *C               = "c";
+const char *EPS             = "eps";
+const char *P               = "p";
+const char *SHRINKING       = "shrinking";
+const char *PROBABILITY     = "probability";
+
 SupportVectorMachine::SupportVectorMachine():
     _model(NULL),
     _data(NULL)
 {
+    _parameter.nr_weight = 0;
+    _parameter.weight_label = NULL;
+    _parameter.weight = NULL;
+}
+
+SupportVectorMachine::SupportVectorMachine(const ParametersMap &params):
+    _model(NULL),
+    _data(NULL)
+{
+    string svm_type = params.getStr(SVM_TYPE);
+    string kernel_type = params.getStr(KERNEL_TYPE);
+
+    if(boost::iequals(svm_type,"C_SVC"))
+        _parameter.svm_type = C_SVC;
+    else if (boost::iequals(svm_type,"NU_SVC"))
+        _parameter.svm_type = NU_SVC;
+    else if (boost::iequals(svm_type,"ONE_CLASS"))
+        _parameter.svm_type = ONE_CLASS;
+    else if (boost::iequals(svm_type,"EPSILON_SVR"))
+        _parameter.svm_type = EPSILON_SVR;
+    else if (boost::iequals(svm_type,"NU_SVR"))
+        _parameter.svm_type = NU_SVR;
+
+    if(boost::iequals(kernel_type,"LINEAR"))
+        _parameter.kernel_type = LINEAR;
+    else if (boost::iequals(kernel_type,"POLY"))
+        _parameter.kernel_type = POLY;
+    else if (boost::iequals(kernel_type,"RBF"))
+        _parameter.kernel_type = RBF;
+    else if (boost::iequals(kernel_type,"SIGMOID"))
+        _parameter.kernel_type = SIGMOID;
+    else if (boost::iequals(kernel_type,"PRECOMPUTED"))
+        _parameter.kernel_type = PRECOMPUTED;
+
+    _parameter.degree = params.getInt(DEGREE);
+    _parameter.gamma = params.getInt(GAMMA);
+    _parameter.coef0 = params.getInt(COEF0);
+    _parameter.nu = params.getFloat(NU);
+    _parameter.cache_size = params.getInt(CACHE_SIZE);
+    _parameter.C = params.getFloat(C);
+    _parameter.eps = params.getFloat(EPS);
+    _parameter.p = params.getFloat(P);
+    _parameter.shrinking = params.getInt(SHRINKING);
+    _parameter.probability = params.getInt(PROBABILITY);
+
+    _parameter.nr_weight = 0;
+    _parameter.weight_label = NULL;
+    _parameter.weight = NULL;
+
+    printSVMParameters();
 }
 
 SupportVectorMachine::SupportVectorMachine(const std::string &modelFName):
@@ -13,8 +76,7 @@ SupportVectorMachine::SupportVectorMachine(const std::string &modelFName):
     load(modelFName);
 }
 
-void
-SupportVectorMachine::_deinit()
+void SupportVectorMachine::_deinit()
 {
     if(_model != NULL) svm_free_and_destroy_model(&_model);
     if(_data != NULL) delete [] _data;
@@ -27,39 +89,67 @@ SupportVectorMachine::~SupportVectorMachine()
     _deinit();
 }
 
-void SupportVectorMachine::train(const std::vector<float> &labels, const FeatureCollection &fset, svm_parameter parameter)
+ParametersMap SupportVectorMachine::getDefaultParameters()
+{
+    ParametersMap params;
+    params.set(SVM_TYPE, "C_SVC");
+    params.set(KERNEL_TYPE, "LINEAR");
+    params.set(DEGREE, 0);
+    params.set(GAMMA, 0);
+    params.set(COEF0, 0);
+    params.set(NU, 0.5);
+    params.set(CACHE_SIZE, 100); // In MB
+    params.set(C, 0.01);
+    params.set(EPS, 1e-3);
+    params.set(P, 0.1);
+    params.set(SHRINKING, 1);
+    params.set(PROBABILITY, 0);
+    return params;
+}
+
+ParametersMap SupportVectorMachine::getParameters()
+{
+    ParametersMap params;
+    params.set(SVM_TYPE, _parameter.svm_type);
+    params.set(KERNEL_TYPE, _parameter.kernel_type);
+    params.set(DEGREE, _parameter.degree);
+    params.set(GAMMA, _parameter.gamma);
+    params.set(COEF0, _parameter.coef0);
+    params.set(NU, _parameter.nu);
+    params.set(CACHE_SIZE, _parameter.cache_size);
+    params.set(C, _parameter.C);
+    params.set(EPS, _parameter.eps);
+    params.set(P, _parameter.p);
+    params.set(SHRINKING, _parameter.shrinking);
+    params.set(PROBABILITY, _parameter.probability);
+    return params;
+}
+
+void SupportVectorMachine::printSVMParameters()
+{
+    cout << "SVM_TYPE: " << _parameter.svm_type << endl;
+    cout << "KERNEL_TYPE: " << _parameter.kernel_type << endl;
+    cout << "DEGREE: " << _parameter.degree << endl;
+    cout << "GAMMA: " << _parameter.gamma << endl;
+    cout << "COEF0: " << _parameter.coef0 << endl;
+    cout << "NU: " << _parameter.nu << endl;
+    cout << "CACHE_SIZE: " << _parameter.cache_size << endl;
+    cout << "C: " << _parameter.C << endl;
+    cout << "EPS: " << _parameter.eps << endl;
+    cout << "P: " << _parameter.p << endl;
+    cout << "SHRINKING: " << _parameter.shrinking << endl;
+    cout << "PROBABILITY: " << _parameter.probability << endl;
+}
+
+void SupportVectorMachine::train(const std::vector<float> &labels, const FeatureCollection &fset)
 {
     if(labels.size() != fset.size()) throw "Database size is different from feature set size!";
-
-    // _fVecShape = fset[0].Shape();
-    // if(roiSize.width != 0 && roiSize.height != 0) {
-    //     _roiSize = roiSize;
-    // } else {
-    //     _roiSize.width = _fVecShape.width;
-    //     _roiSize.height = _fVecShape.height;
-    // }
 
     // Figure out size and number of feature vectors
     int nVecs = labels.size();
     cv::Size shape = fset[0].size();
     int dim = shape.width * shape.height;
 
-    // Parameters for SVM
-    // parameter.svm_type = C_SVC;
-    // parameter.kernel_type = LINEAR;
-    // parameter.degree = 0;
-    // parameter.gamma = 0;
-    // parameter.coef0 = 0;
-    // parameter.nu = 0.5;
-    // parameter.cache_size = 100;  // In MB
-    // parameter.C = C;
-    // parameter.eps = 1e-3;
-    // parameter.p = 0.1;
-    // parameter.shrinking = 1;
-    // parameter.probability = 0;
-    // parameter.nr_weight = 0; // ?
-    // parameter.weight_label = NULL;
-    // parameter.weight = NULL;
     //cross_validation = 0;
 
     // Allocate memory
@@ -116,7 +206,7 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
 
     // Train the model
     if(_model != NULL) svm_free_and_destroy_model(&_model);
-    _model = svm_train(&problem, &parameter);
+    _model = svm_train(&problem, &_parameter);
 
     // Cleanup
     delete [] problem.y;
@@ -203,8 +293,7 @@ void SupportVectorMachine::load(const std::string &filename)
 void SupportVectorMachine::load(FILE *fp)
 {
     _deinit();
-    // fscanf(fp, "%d %d %d", &_fVecShape.width, &_fVecShape.height, &_fVecShape.nBands);
-    // fscanf(fp, "%lf %lf", &_roiSize.width, &_roiSize.height);
+
     _model = svm_load_model_fp(fp);
     if(_model == NULL) {
         throw "Failed to load SVM model";
@@ -214,9 +303,6 @@ void SupportVectorMachine::load(FILE *fp)
 void SupportVectorMachine::save(FILE *fp) const
 {
     if(_model == NULL) throw "No model to be saved";
-
-    // fprintf(fp, "%d %d %d\n", _fVecShape.width, _fVecShape.height, _fVecShape.nBands);
-    // fprintf(fp, "%lf %lf\n", _roiSize.width, _roiSize.height);
 
     if(svm_save_model_fp(fp, _model) != 0) {
         throw "Error while trying to write model to file";

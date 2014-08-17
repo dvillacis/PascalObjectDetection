@@ -20,6 +20,8 @@
 #include <cstdlib>
 #include <cmath>
 #include <stdint.h>
+// Library for Support Vector Machine algo
+#include "libsvm-3.14/svm.h"
 
 // Boost 
 #include <boost/algorithm/string.hpp>
@@ -34,24 +36,7 @@
 // Image Lib
 //#include "ImageLib/ImageLib.h"
 
-// Library for Support Vector Machine algo
-#include "libsvm-3.14/svm.h"
 
-// ============================================================================
-// Needed by windows
-// ============================================================================
-
-#define PROMPT "[OBJDET] "
-
-// Logging macro
-#define PRINT_MSG(msg) std::cout << PROMPT << msg << std::endl
-
-// Debugging macros, output suppressed in release mode
-#ifdef NDEBUG
-#define PRINT_EXPR(expr)
-#else
-#define PRINT_EXPR(expr) std::cout << PROMPT << #expr << " = " << (expr) << std::endl
-#endif
 
 // ============================================================================
 // Needed by Windows
@@ -88,6 +73,7 @@ static const int BOX_WIDTH = 2; // Border around the box that Fl draws (guessing
 #define IMAGE_PYRAMID_KEY     "ImagePyramid"
 #define FEATURE_EXTRACTOR_KEY "FeatureExtractor"
 #define FEATURE_TYPE_KEY      "feature_type"
+#define SVM_CONFIG_KEY	      "svm_config"
 
 #endif // COMMON_H
 

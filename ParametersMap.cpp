@@ -9,8 +9,7 @@ toString(const std::string &fmt, T val)
     return std::string(buffer);
 }
 
-void
-ParametersMap::save(const std::string &fname) const
+void ParametersMap::save(const std::string &fname) const
 {
     FILE *f = fopen(fname.c_str(), "w");
     if(f == NULL) {
@@ -21,8 +20,7 @@ ParametersMap::save(const std::string &fname) const
     fclose(f);
 }
 
-void
-ParametersMap::save(FILE *f) const
+void ParametersMap::save(FILE *f) const
 {
     fprintf(f, "%lu\n", size());
 
@@ -31,8 +29,7 @@ ParametersMap::save(FILE *f) const
     }
 }
 
-void
-ParametersMap::load(FILE *f)
+void ParametersMap::load(FILE *f)
 {
     int n;
     fscanf(f, "%d", &n);
@@ -45,45 +42,38 @@ ParametersMap::load(FILE *f)
     }
 }
 
-void
-ParametersMap::set(const std::string &key, double val)
+void ParametersMap::set(const std::string &key, double val)
 {
     // TODO: throw exception if key has a space in it
     (*this)[key] = toString("%f", val);
 }
 
-void
-ParametersMap::set(const std::string &key, int val)
+void ParametersMap::set(const std::string &key, int val)
 {
     (*this)[key] = toString("%d", val);
 }
 
-void
-ParametersMap::set(const std::string &key, const std::string &val)
+void ParametersMap::set(const std::string &key, const std::string &val)
 {
     (*this)[key] = val;
 }
 
-int
-ParametersMap::getInt(const std::string &key) const
+int ParametersMap::getInt(const std::string &key) const
 {
     return atoi(this->at(key).c_str());
 }
 
-double
-ParametersMap::getFloat(const std::string &key) const
+double ParametersMap::getFloat(const std::string &key) const
 {
     return atof(this->at(key).c_str());
 }
 
-const std::string &
-ParametersMap::getStr(const std::string &key) const
+const std::string & ParametersMap::getStr(const std::string &key) const
 {
     return this->at(key);
 }
 
-void
-saveToFile(const std::string &fname, const std::map<std::string, ParametersMap> &params)
+void saveToFile(const std::string &fname, const std::map<std::string, ParametersMap> &params)
 {
     using namespace std;
 
@@ -101,8 +91,7 @@ saveToFile(const std::string &fname, const std::map<std::string, ParametersMap> 
     fclose(f);
 }
 
-void
-loadFromFile(const std::string &fname, std::map<std::string, ParametersMap> &params)
+void loadFromFile(const std::string &fname, std::map<std::string, ParametersMap> &params)
 {
     using namespace std;
 

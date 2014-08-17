@@ -1,4 +1,13 @@
-// Defining PASCAL Annotation structure
+#ifndef PASCAL_ANNOTATION_H
+#define PASCAL_ANNOTATION_H
+
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+
+using namespace std;
+
+// Defining PASCAL Annotation 
 struct source_annotation
 {
     string database;
@@ -50,7 +59,7 @@ struct pascal_annotation
     void load(const string &annotationsFilename);
 };
 
-void pascal_annotation::load(const string &annotationsFilename)
+inline void pascal_annotation::load(const string &annotationsFilename)
 {
     using boost::property_tree::ptree;
     ptree pt;
@@ -83,3 +92,5 @@ void pascal_annotation::load(const string &annotationsFilename)
         }
     }
 }
+
+#endif // PASCAL_ANNOTATION_H

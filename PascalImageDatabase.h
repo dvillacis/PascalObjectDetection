@@ -3,10 +3,6 @@
 
 #include "Common.h"
 
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-#include <boost/foreach.hpp>
-
 using namespace std;
 
 // Stores the datasets used for training and testing the Support
@@ -32,7 +28,7 @@ private:
 public:
     // Create a new database.
     PascalImageDatabase();
-    PascalImageDatabase(const char *dbFilename);
+    PascalImageDatabase(const char *dbFilename, string category);
     PascalImageDatabase(const vector<float> &labels, const vector<string> &filenames);
 
     // Load a database from file.

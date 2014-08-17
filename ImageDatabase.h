@@ -4,30 +4,36 @@
 #include "Common.h"
 #include "Detection.h"
 
+using namespace std;
+
 class ImageDatabase
 {
 private:
-    std::vector<std::string> _filenames;
-    std::vector<std::vector<Detection> > _detections;
-    std::string _dbFilename;
+    vector<string> _filenames;
+    vector<vector<Detection> > _detections;
+    string _dbFilename;
+    string _category;
 
 public:
     // Create a new database.
     ImageDatabase();
-    ImageDatabase(const std::string &dbFilename);
-    ImageDatabase(const std::vector<std::vector<Detection> > &dets, const std::vector<std::string> &fnames);
+    ImageDatabase(const string &dbFilename);
+    ImageDatabase(const vector<vector<Detection> > &dets, const vector<string> &fnames);
 
     // Load a database from file.
-    void load(const std::string &dbFilename);
-    void save(const std::string &dbFilename);
+    void load(const string &dbFilename);
+    void save(const string &dbFilename);
 
     // Accessors
-    const std::vector<std::vector<Detection> > &getDetections() const { return _detections; }
-    const std::vector<std::string> &getFilenames() const { return _filenames; }
+    const vector<vector<Detection> > &getDetections() const { return _detections; }
+    const vector<string> &getFilenames() const { return _filenames; }
 
     // Info about the database
     int getSize() const { return _detections.size(); }
-    std::string getDatabaseFilename() const { return _dbFilename; }
+    string getDatabaseFilename() const { return _dbFilename; }
+
+    // Getting the ground truth from the annotations
+    vector<Detection> getGroundTruth(string imageName);
 };
 
 #endif // IMAGE_DATABASE_H

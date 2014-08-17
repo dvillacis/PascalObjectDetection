@@ -1,17 +1,24 @@
-#include "PascalImageDatabase.h"
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/foreach.hpp>
+
 #include "PascalAnnotation.h"
+#include "PascalImageDatabase.h"
 
 using namespace std;
+
+
+//Pascal Image Database class
 
 PascalImageDatabase::PascalImageDatabase():
     _positivesCount(0), _negativesCount(0)
 {
 }
 
-PascalImageDatabase::PascalImageDatabase(const char *dbFilename):
+PascalImageDatabase::PascalImageDatabase(const char *dbFilename, string category):
     _positivesCount(0), _negativesCount(0)
 {
-    _category = "car";
+    _category = category;
     load(dbFilename);
 }
 
@@ -50,7 +57,6 @@ void PascalImageDatabase::getROI(string imageName, vector<cv::Rect>& rois, vecto
             label = 1;
         roiLabels.push_back(label);
     }
-
 }
 
 void PascalImageDatabase::load(const char *dbFilename)

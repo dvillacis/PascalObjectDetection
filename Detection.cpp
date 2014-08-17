@@ -1,23 +1,23 @@
 #include "Detection.h"
 
 using namespace cv;
+using namespace std;
 
 Detection::Detection():
-    x(0), y(0), response(0), width(0), height(0)
+    rect(Rect(0,0,0,0)), response(0)
 {}
 
-Detection::Detection(double x, double y, double response, double width, double height):
-    x(x), y(y), response(response), width(width), height(height)
+Detection::Detection(Rect rect, double response):
+    rect(rect), response(response)
 {}
 
-double
-Detection::area() const
+double Detection::area() const
 {
-    return width * height;
+    //return width * height;
+    return rect.area();
 }
 
-double
-Detection::relativeOverlap(const Detection &other) const
+double Detection::relativeOverlap(const Detection &other) const
 {
     /******** BEGIN TODO ********/
     // Compute the relative overlap between two detections. This
@@ -39,104 +39,50 @@ printf("TODO: %s:%d\n", __FILE__, __LINE__);
     return relOver;
 }
 
-class Color
-{
-public:
-    Color(uint8_t r, uint8_t g, uint8_t b): r(r), g(g), b(b) {}
-    uint8_t r, g, b;
-};
-
-static void drawHorizLine(Mat &img, int xStart, int xEnd, int y, const Color &color)
-{
-    // CShape shape = img.Shape();
-    // assert(shape.nBands == 3);
-
-    // if(y < 0 || y >= shape.height) return;
-
-    // xStart = std::max(0, xStart);
-    // xEnd = std::min(xEnd, shape.width - 1);
-
-    // char *pix = (char *)img.PixelAddress(xStart, y, 0);
-    // for (int i = 0; i < (xEnd - xStart); i++, pix += 3) {
-    //     pix[0] = color.b;
-    //     pix[1] = color.g;
-    //     pix[2] = color.r;
-    // }
-}
-
-static void drawVertLine(Mat &img, int x, int yStart, int yEnd, const Color &color)
-{
-    // CShape shape = img.Shape();
-    // assert(shape.nBands == 3);
-
-    // if(x < 0 || x >= shape.width) return;
-
-    // yStart = std::max(0, yStart);
-    // yEnd = std::min(yEnd, shape.height - 1);
-
-    // //char* pix = (char*)img.PixelAddress(x, yStart, 0);
-    // for (int i = 0; i < (yEnd - yStart); i++) { //, pix += stride) {
-    //     char *pix = (char *)img.PixelAddress(x, yStart + i, 0);
-
-    //     pix[0] = color.b;
-    //     pix[1] = color.g;
-    //     pix[2] = color.r;
-    // }
-}
-
 void Detection::draw(Mat &img) const
 {
-    static const Color red(255, 50, 50);
-    // Bounding box
-    drawHorizLine(img, x - width / 2.0, x + width / 2.0, y - height / 2.0, red);
-    drawHorizLine(img, x - width / 2.0, x + width / 2.0, y + height / 2.0, red);
+    rectangle(img,rect,Scalar(255,0,0),2);
+    // static const Color red(255, 50, 50);
+    // // Bounding box
+    // drawHorizLine(img, x - width / 2.0, x + width / 2.0, y - height / 2.0, red);
+    // drawHorizLine(img, x - width / 2.0, x + width / 2.0, y + height / 2.0, red);
 
-    drawVertLine(img, x - width / 2.0, y - height / 2.0, y + height / 2.0, red);
-    drawVertLine(img, x + width / 2.0, y - height / 2.0, y + height / 2.0, red);
+    // drawVertLine(img, x - width / 2.0, y - height / 2.0, y + height / 2.0, red);
+    // drawVertLine(img, x + width / 2.0, y - height / 2.0, y + height / 2.0, red);
 
-    // Central point
-    const int crossSize = 3;
-    drawHorizLine(img, x - crossSize, x + crossSize, y, red);
-    drawVertLine(img, x, y - crossSize, y + crossSize, red);
+    // // Central point
+    // const int crossSize = 3;
+    // drawHorizLine(img, x - crossSize, x + crossSize, y, red);
+    // drawVertLine(img, x, y - crossSize, y + crossSize, red);
 }
 
-void drawDetections(Mat &img, const std::vector<Detection> &dets)
+void drawDetections(Mat &img, const vector<Detection> &dets)
 {
-    for(std::vector<Detection>::const_iterator det = dets.begin(), detEnd = dets.end(); det != detEnd; det++) {
+    for(vector<Detection>::const_iterator det = dets.begin(), detEnd = dets.end(); det != detEnd; det++) {
         det->draw(img);
     }
 }
 
-std::ostream &
-operator<<(std::ostream &s, const Detection &d)
+ostream & operator << (ostream &s, const Detection &d)
 {
-    s << d.x << " " << d.y << " " << d.width << " " << d.height << " " << d.response;
+    s << d.rect << " " << d.response;
     return s;
 }
 
-std::istream &
-operator>>(std::istream &s, Detection &d)
-{
-    s >> d.x >> d.y >> d.width >> d.height >> d.response;
-    return s;
-}
-
-bool
-sortByResponse(const std::pair<int, float> &a, const std::pair<int, float> &b)
+bool sortByResponse(const pair<int, float> &a, const pair<int, float> &b)
 {
     return a.second > b.second;
 }
 
-void
-computeLabels(const std::vector<Detection> &gt, const std::vector<Detection> &found,
-              std::vector<float> &label, std::vector<float> &response)
+void computeLabels(const vector<Detection> &gt, const vector<Detection> &found,
+              vector<float> &label, vector<float> &response)
 {
     const double overlapThresh = 0.5;
 
     vector<float> labels;
-    vector<std::pair<int, float> > idxResp(found.size());
+    vector<pair<int, float> > idxResp(found.size());
     for (int i = 0; i < found.size(); i++) {
-        idxResp[i] = std::pair<int, float>(i, found[i].response);
+        idxResp[i] = pair<int, float>(i, found[i].response);
     }
 
     sort(idxResp.begin(), idxResp.end(), sortByResponse);
@@ -144,7 +90,7 @@ computeLabels(const std::vector<Detection> &gt, const std::vector<Detection> &fo
     label = vector<float>(found.size(), -1);
     response = vector<float>(found.size(), 0);
 
-    std::vector<bool> taken(gt.size(), false);
+    vector<bool> taken(gt.size(), false);
     for (int i = 0; i < idxResp.size(); i++) {
 
         int idx = idxResp[i].first;
@@ -177,11 +123,10 @@ computeLabels(const std::vector<Detection> &gt, const std::vector<Detection> &fo
     }
 }
 
-void
-computeLabels(const std::vector<std::vector<Detection> > &gt, const std::vector<std::vector<Detection> > &found,
-              std::vector<float> &label, std::vector<float> &response, int& nDets)
+void computeLabels(const vector<vector<Detection> > &gt, const vector<vector<Detection> > &found,
+              vector<float> &label, vector<float> &response, int& nDets)
 {
-    using namespace std;
+    
     assert(gt.size() == found.size());
 
     response.resize(0);
@@ -199,7 +144,7 @@ computeLabels(const std::vector<std::vector<Detection> > &gt, const std::vector<
             if(lab[j] > 0) nCorrect++;
         }
 
-        PRINT_MSG(nCorrect << "/" << lab.size() << " detections matched");
+        LOG(INFO) << nCorrect << "/" << lab.size() << " detections matched";
 
         response.insert(response.end(), resp.begin(), resp.end());
         label.insert(label.end(), lab.begin(), lab.end());

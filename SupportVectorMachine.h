@@ -12,6 +12,9 @@ private:
     svm_node *_data; // Have to keep this around if we want to save the model after training
     cv::Size _fVecShape; // Shape of feature vector
 
+    // SVM Parameters
+    svm_parameter _parameter;
+
 private:
     // De allocate memory
     void _deinit();
@@ -19,11 +22,14 @@ private:
 public:
     SupportVectorMachine();
 
+    // Loads SVM with user-defined parameters
+    SupportVectorMachine(const ParametersMap &params);
+
     // Loads SVM model from file
     SupportVectorMachine(const std::string &modelFName);
     ~SupportVectorMachine();
 
-    void train(const std::vector<float> &labels, const FeatureCollection &fset, svm_parameter parameter);
+    void train(const std::vector<float> &labels, const FeatureCollection &fset);
 
     // Run classifier on feature, size of feature must match one used for
     // model training
@@ -38,10 +44,15 @@ public:
     // where each level contains the response of the classifier at the
     // corresponding level of the input pyramid.
     //void predictSlidingWindow(const FeaturePyramid &featPyr, SBFloatPyramid &responsePyr) const;
+    void printSVMParameters();
 
     // Get SVM weights in the shape of the original features
     Feature getWeights() const;
     double getBiasTerm() const;
+
+    // Get default parameters
+    static ParametersMap getDefaultParameters();
+    ParametersMap getParameters();
 
     Mat renderSVMWeights(const FeatureExtractor *featExtractor);
 

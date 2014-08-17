@@ -7,20 +7,22 @@ class Detection
 {
 public:
     Detection();
-    Detection(double x, double y, double resp, double width, double height);
+    //Detection(double x, double y, double resp, double width, double height);
+    Detection(cv::Rect rect, double resp);
 
     void draw(cv::Mat &img) const;
 
     double relativeOverlap(const Detection &other) const;
     double area() const;
 
-    double x, y;          // Coordinates of the center of the detection
+    cv::Rect rect;
+
+    // double x, y;          // Coordinates of the center of the detection
     double response;      // Response of the detector at (x, y) in the response image
-    double width, height; // Width and height of the support of the feature vector
+    // double width, height; // Width and height of the support of the feature vector
 };
 
 std::ostream &operator<<(std::ostream &s, const Detection &d);
-std::istream &operator>>(std::istream &s, Detection &d);
 
 void drawDetections(cv::Mat &img, const std::vector<Detection> &dets);
 

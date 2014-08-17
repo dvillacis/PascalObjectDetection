@@ -1,10 +1,13 @@
 #include "Common.h"
+#include "PascalAnnotation.h"
+#include "PascalImageDatabase.h"
+#include "ImageDatabase.h"
 #include "Feature.h"
 #include "SupportVectorMachine.h"
 #include "PrecisionRecall.h"
 #include "ObjectDetector.h"
 #include "FileIO.h"
-#include "ImageDatabase.h"
+
 
 using namespace std;
 
@@ -43,14 +46,13 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
 
     string dbFName = args[2];
     string svmModelFName = args[3];
+    string category;
 
-    PascalImageDatabase db(dbFName.c_str());
-    cout << db << endl;
-
+    LOG(INFO) << "Obtaining feature extractor parameters";
     ParametersMap featParams;
     if(opts.count("-f") == 1) {
-        string featureType = opts.at("-f");
-        featParams = FeatureExtractor::getDefaultParameters(featureType);
+        category = opts.at("-f");
+        featParams = FeatureExtractor::getDefaultParameters("hog");
     } else if(opts.count("-p") == 1) {
         string paramsFName = opts.at("-p");
 
@@ -66,40 +68,42 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     } else {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
+    
+    LOG(INFO) << "Creating the image database";
+    PascalImageDatabase db(dbFName.c_str(), category);
+    cout << db << endl;
 
-    // SVM Parameter definition
-    svm_parameter parameter;
-    parameter.svm_type = C_SVC;
-    parameter.kernel_type = LINEAR;
-    parameter.degree = 0;
-    parameter.gamma = 0;
-    parameter.coef0 = 0;
-    parameter.nu = 0.5;
-    parameter.cache_size = 100;  // In MB
-    parameter.C = 0.01;
-    parameter.eps = 1e-3;
-    parameter.p = 0.1;
-    parameter.shrinking = 1;
-    parameter.probability = 0;
-    parameter.nr_weight = 0; // ?
-    parameter.weight_label = NULL;
-    parameter.weight = NULL;
+    LOG(INFO) << "Obtaining svm parameters";
 
-    // double svmC = 0.01;
-    // if(opts.count("-c") == 1) svmC = atof(opts.at("-c").c_str());
+    ParametersMap svmParams;
+    if(opts.count("-c") == 1){
+        string paramsSVMFName = opts.at("-c");
+        map<string, ParametersMap> allParams;
+        loadFromFile(paramsSVMFName, allParams);
+        if(allParams.count(SVM_CONFIG_KEY)){
+            LOG(INFO) << "Using svm parameters from file: " << paramsSVMFName;
+            svmParams = allParams[SVM_CONFIG_KEY];
+        } else {
+            throw "ERROR: Problem obtaining the parameters from file: " + paramsSVMFName;
+        }
+    } else {
+        LOG(INFO) << "Using default svm parameters";
+        svmParams = SupportVectorMachine::getDefaultParameters();
+    }
+
+    LOG(INFO) << "svm parameters retrieved";
 
     FeatureExtractor *featExtractor = FeatureExtractor::create(featParams);
 
-    LOG(INFO) << "Feature type: " << featExtractor->getFeatureType();
+    LOG(INFO) << "Category: " << category;
 
     LOG(INFO) << "Extracting features";
     FeatureCollection features;
     (*featExtractor)(db, features);
 
     LOG(INFO) << "Training SVM";
-    SupportVectorMachine svm;
-
-    svm.train(db.getLabels(), features, parameter);
+    SupportVectorMachine svm(svmParams);
+    svm.train(db.getLabels(), features);
 
     saveToFile(svmModelFName, svm, featExtractor);
 
@@ -118,7 +122,14 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
     string prFName = (args.size() >= 5) ? args[4] : "";
     string predsFName = (args.size() >= 6) ? args[5] : "";
 
-    PascalImageDatabase db(dbFName.c_str());
+    string category;
+    if(opts.count("-f") == 1) {
+        category = opts.at("-f");
+    } else {
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
+    }
+
+    PascalImageDatabase db(dbFName.c_str(), category);
     cout << db << endl;
 
     LOG(INFO) << "Loading SVM model and feature extractor from file";
@@ -198,8 +209,8 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
 
         string imgFName = db.getFilenames()[i];
 
-        // // load image
-        // CByteImage img;
+        // load image
+        Mat img;
         // ReadFile(img, imgFName.c_str());
 
         // // build pyramid
