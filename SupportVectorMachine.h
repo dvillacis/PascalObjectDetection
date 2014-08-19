@@ -34,6 +34,7 @@ public:
     // Run classifier on feature, size of feature must match one used for
     // model training
     float predict(const Feature &feature) const;
+    float predictLabel(const Feature &feature) const;
     std::vector<float> predict(const FeatureCollection &fset) const;
 
     // Runs classifier at every location of feature feat, returns a
@@ -43,7 +44,9 @@ public:
     // Runs classifier on each level of the pyramid, returns a pyramid
     // where each level contains the response of the classifier at the
     // corresponding level of the input pyramid.
-    //void predictSlidingWindow(const FeaturePyramid &featPyr, SBFloatPyramid &responsePyr) const;
+    void predictSlidingWindow(const FeatureCollection &featPyr, vector<Mat> &responsePyr) const;
+
+    // Print the parameters chosen for the SVM
     void printSVMParameters();
 
     // Get SVM weights in the shape of the original features

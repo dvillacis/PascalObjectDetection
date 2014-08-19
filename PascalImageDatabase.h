@@ -28,7 +28,7 @@ private:
 public:
     // Create a new database.
     PascalImageDatabase();
-    PascalImageDatabase(const char *dbFilename, string category);
+    PascalImageDatabase(const char *dbFilename, const string category);
     PascalImageDatabase(const vector<float> &labels, const vector<string> &filenames);
 
     // Load a database from file.

@@ -1,109 +1,79 @@
+#include <boost/foreach.hpp>
 #include "ObjectDetector.h"
 
 #define WIN_SIZE_NMS_KEY   "nms_win_size"
 #define RESP_THESH_KEY     "sv_response_threshold"
 #define OVERLAP_THRESH_KEY "detection_overlap_threshold"
 
-ObjectDetector::ObjectDetector(const ParametersMap &params)
-{
-    _winSizeNMS = params.getInt(WIN_SIZE_NMS_KEY);
-    _respThresh = params.getFloat(RESP_THESH_KEY);
-    _overlapThresh = params.getFloat(OVERLAP_THRESH_KEY);
-}
+using namespace cv;
+using namespace std;
 
-ParametersMap
-ObjectDetector::getDefaultParameters()
-{
-    ParametersMap params;
-    params.set(WIN_SIZE_NMS_KEY  , 11  );
-    params.set(RESP_THESH_KEY    ,  0  );
-    params.set(OVERLAP_THRESH_KEY,  0.2);
-    return params;
-}
+// Object Detector class
 
-ParametersMap
-ObjectDetector::getParameters() const
-{
-    ParametersMap params;
-    params.set(WIN_SIZE_NMS_KEY, _winSizeNMS);
-    params.set(RESP_THESH_KEY, _respThresh);
-    params.set(OVERLAP_THRESH_KEY, _overlapThresh);
-    return params;
-}
-
-ObjectDetector::ObjectDetector(int winSizeNMS, double respThresh, double overlapThresh):
-    _winSizeNMS(winSizeNMS),
-    _respThresh(respThresh),
-    _overlapThresh(overlapThresh)
+ObjectDetector::ObjectDetector(FeatureExtractor* featExtractor, SupportVectorMachine svm):
+    _featExtractor(featExtractor),
+    _svm(svm)
 {
 }
 
-void ObjectDetector::operator()( const cv::Mat &svmResp, double featureScaleFactor, 
-                            std::vector<Detection> &dets,
-                            double imScale ) const
+ObjectDetector::~ObjectDetector()
 {
-    /******** BEGIN TODO ********/
-    // Non-Maxima Suppression on a single image
-    //
-    // For every window of size _winSizeNMS by _winSizeNMS determine if the
-    // pixel at the center of the window is the local maxima and is also
-    // greater than _respThresh. If so, create an instance of Detection and
-    // store it in dets, remember to set the position of the central pixel
-    // (x,y), as well as the dimensions of the detection (based on roiSize). Y
-    // ou will have to correct location and dimensions using a scale factor
-    // that is a function of featureScaleFactor and imScale.
-
-    dets.resize(0);
-
-printf("TODO: %s:%d\n", __FILE__, __LINE__); 
-
-    /******** END TODO ********/
 }
 
-bool
-sortByResponse(const Detection &d1, const Detection &d2)
+void ObjectDetector::getDetections(Mat img)//, 
+        //FeatureExtractor* featExtractor, SupportVectorMachine svm)//, 
+        //vector<Detection>& dets)
 {
-    return d1.response >= d2.response;
+    Size winStride = Size(8,8);
+    Size padding = Size(32,32);
+    double scale0 = 1.05;
+    double finalThreshold = 2.0;
+
+    Rect o(0,0,img.cols,img.rows);
+    vector<Rect> allCandidates;
+
+    for(int j = 0; j < img.rows; j = j + 128)
+    {
+        for(int i = 0; i < img.cols; i = i + 64)
+        {
+            Rect r(i,j,i+64,j+128);
+            Rect intersection = r & o;
+            Mat patch = img(intersection);
+            resize(patch,patch,Size(64,128));
+
+            Feature f;
+            (*_featExtractor)(patch,f);
+            _svm.predict(f);
+            // if(_svm.predictLabel(f) > 0){
+            //     // Possible detection
+            //     LOG(INFO) << "Found possible detection: " << intersection;
+            //     allCandidates.push_back(intersection);
+            // }
+
+    //         //patch.release();
+        }
+    }
+
+    // cout << allCandidates.size() << endl;
 }
 
-// void
-// ObjectDetector::operator()( const SBFloatPyramid &svmRespPyr, const Size &roiSize,
-//                             double featureScaleFactor, std::vector<Detection> &dets ) const
-// {
-//     /******** BEGIN TODO ********/
-//     // Non-Maxima Suppression across pyramid levels
-//     //
-//     // Given the pyramid of SVM responses, for each level you will find
-//     // the non maximas within a window of size _winSizeNMS by _winSizeNMS.
-//     // This functionality is impelmented in the other operator() method above.
-//     // Once all detections for all levels are found we perform another round of
-//     // non maxima suppression, this time across all levels. In this step you will
-//     // use the relativeOverlap method from the class Detection to determine if
-//     // a detection "competes" with another. If there is enough overlap between them
-//     // (i.e., if the relative overlap is greater then _overlapThresh) then only the
-//     // detection with strongest response is kept.
-//     //
-//     // Steps are:
-//     // 1) Find the local maxima per level of the pyramid for all levels
-//     // 2) Perform non maxima suppression across levels
-//     //
-//     // Useful functions:
-//     // sortByResponse, relativeOverlap, opreator()
 
-//     dets.resize(0);
 
-//     // Find detections per level
-//     std::vector<Detection> allDets;
-//     for (int i = 0; i < svmRespPyr.getNLevels(); i++) {
 
-//         std::vector<Detection> levelDets;
-//         this->operator()(svmRespPyr[i], roiSize, featureScaleFactor, levelDets, svmRespPyr.levelScale(i));
 
-//         allDets.insert(allDets.end(), levelDets.begin(), levelDets.end());
-//     }
 
-// printf("TODO: %s:%d\n", __FILE__, __LINE__); 
 
-//     /******** END TODO ********/
-// }
+
+
+
+
+
+
+
+
+
+
+
+
+
 

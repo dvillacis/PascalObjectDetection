@@ -16,9 +16,9 @@ void printUsage(const std::string &execName)
     printf("Usage:\n");
     printf("\t%s -h\n", execName.c_str());
     printf("\t%s TRAIN   -p <in:params> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
-    printf("\t%s TRAIN   -f <feature type> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
-    printf("\t%s PRED    <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
-    printf("\t%s PREDSL  [-p <in:params>] <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s TRAIN   -f <category name> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
+    printf("\t%s PRED    -f <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s PREDSL  -f <category name> [-p <in:params>] <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
 }
 
 void parseCommandLineOptions(int argc, char **argv, vector<std::string> &args, map<std::string, string> &opts)
@@ -73,8 +73,15 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     PascalImageDatabase db(dbFName.c_str(), category);
     cout << db << endl;
 
-    LOG(INFO) << "Obtaining svm parameters";
+    FeatureExtractor *featExtractor = FeatureExtractor::create(featParams);
 
+    LOG(INFO) << "Category: " << category;
+
+    LOG(INFO) << "Extracting features";
+    FeatureCollection features;
+    (*featExtractor)(db, features);
+
+    LOG(INFO) << "Obtaining svm parameters";
     ParametersMap svmParams;
     if(opts.count("-c") == 1){
         string paramsSVMFName = opts.at("-c");
@@ -91,16 +98,6 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
         svmParams = SupportVectorMachine::getDefaultParameters();
     }
 
-    LOG(INFO) << "svm parameters retrieved";
-
-    FeatureExtractor *featExtractor = FeatureExtractor::create(featParams);
-
-    LOG(INFO) << "Category: " << category;
-
-    LOG(INFO) << "Extracting features";
-    FeatureCollection features;
-    (*featExtractor)(db, features);
-
     LOG(INFO) << "Training SVM";
     SupportVectorMachine svm(svmParams);
     svm.train(db.getLabels(), features);
@@ -113,7 +110,7 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
 
 int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
 {
-    if(args.size() < 3 || args.size() > 6) {
+    if(args.size() < 4 || args.size() > 6) {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
@@ -129,6 +126,7 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
+    LOG(INFO) << "Creating the image database";
     PascalImageDatabase db(dbFName.c_str(), category);
     cout << db << endl;
 
@@ -160,7 +158,7 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
 int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, string> &opts)
 {
     // Detection over multiple scales with non maxima suppression
-    if(args.size() < 4) {
+    if(args.size() < 5) {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
@@ -170,30 +168,38 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
     string predsFName = (args.size() >= 6) ? args[5] : "";
 
     //ParametersMap imPyrParams = SBFloatPyramid::getDefaultParameters();
-    ParametersMap obDetParams = ObjectDetector::getDefaultParameters();
-    if(opts.count("-p") == 1) {
-        string paramsFName = opts.at("-p");
+    // ParametersMap obDetParams = ObjectDetector::getDefaultParameters();
+    // if(opts.count("-p") == 1) {
+    //     string paramsFName = opts.at("-p");
 
-        map<string, ParametersMap> allParams;
-        loadFromFile(paramsFName, allParams);
+    //     map<string, ParametersMap> allParams;
+    //     loadFromFile(paramsFName, allParams);
 
-        // if(allParams.count(IMAGE_PYRAMID_KEY)) {
-        //     LOG(INFO) << "Using image pyarmid paramaters from file ";
-        //     imPyrParams = allParams[IMAGE_PYRAMID_KEY];
-        // } else {
-        //     LOG(INFO) << "Using default parameters for image pyaramid";
-        // }
+    //     // if(allParams.count(IMAGE_PYRAMID_KEY)) {
+    //     //     LOG(INFO) << "Using image pyarmid paramaters from file ";
+    //     //     imPyrParams = allParams[IMAGE_PYRAMID_KEY];
+    //     // } else {
+    //     //     LOG(INFO) << "Using default parameters for image pyaramid";
+    //     // }
 
-        if(allParams.count(OBJECT_DETECTOR_KEY)) {
-            LOG(INFO) << "Using NMS paramaters from file ";
-            obDetParams = allParams[OBJECT_DETECTOR_KEY];
-        } else {
-            LOG(INFO) << "Using default parameters for NMS";
-        }
+    //     if(allParams.count(OBJECT_DETECTOR_KEY)) {
+    //         LOG(INFO) << "Using NMS paramaters from file: " << paramsFName;
+    //         obDetParams = allParams[OBJECT_DETECTOR_KEY];
+    //     } else {
+    //         LOG(INFO) << "Using default parameters for NMS";
+    //     }
+    // }
+
+    string category;
+    if(opts.count("-f") == 1) {
+        category = opts.at("-f");
+    } else {
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
     LOG(INFO) << "Loading image database";
-    ImageDatabase db(dbFName);
+    ImageDatabase db(dbFName, category);
+    cout << db << endl;
 
     LOG(INFO) << "Loading SVM model and features extractor from file";
     SupportVectorMachine svm;
@@ -201,7 +207,7 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
     loadFromFile(svmModelFName, svm, &featExtractor);
 
     LOG(INFO) << "Initializing object detector";
-    ObjectDetector obdet(obDetParams);
+    ObjectDetector obdet(featExtractor, svm);
 
     vector<vector<Detection> > dets(db.getSize());
     for(int i = 0; i < db.getSize(); i++) {
@@ -210,24 +216,38 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
         string imgFName = db.getFilenames()[i];
 
         // load image
-        Mat img;
-        // ReadFile(img, imgFName.c_str());
+        Mat img = imread(imgFName,CV_LOAD_IMAGE_COLOR);
 
-        // // build pyramid
-        // CFloatImage imgF(img.Shape());
-        // TypeConvert(img, imgF);
-        // SBFloatPyramid imgPyr(imgF, imPyrParams);
+        // Extracting detections from the source image
+        LOG(INFO) << " --> Extracting detections from the source image";
+        obdet.getDetections(img);//, dets[i]);
 
-        // // Extracting features on image pyramid
-        // FeaturePyramid featPyr;
+        // for(int j = 0; j < dets[i].size(); j++){
+        //     rectangle(img,dets[i][j].rect.tl(),dets[i][j].rect.br(),Scalar(255,0,0),2);
+        // }
+
+        // imshow("Custom Detection", img);
+        // waitKey(0);
+
+        img.release();
+
+        // build pyramid
+        // LOG(INFO) << " --> Building pyramid";
+        // vector<Mat> imgPyr;
+        // buildPyramid(img, imgPyr, 2);
+
+        // Extracting features on image pyramid
+        // LOG(INFO) << " --> Extracting features";
+        // FeatureCollection featPyr;
         // (*featExtractor)(imgPyr, featPyr);
 
-        // // Computing SVM response for every level
-        // SBFloatPyramid responsePyr;
+        // Computing SVM response for every level
+        // LOG(INFO) << " --> Computing SVM response";
+        // vector<Mat> responsePyr;
+        // // SBFloatPyramid responsePyr;
         // svm.predictSlidingWindow(featPyr, responsePyr);
 
-        // // Extracting detections from response pyramid
-        // obdet(responsePyr, svm.getROISize(), featExtractor->scaleFactor(), dets[i]);
+        
     }
 
     ImageDatabase predsDb(dets, db.getFilenames());
@@ -262,8 +282,8 @@ int main(int argc, char **argv)
             return mainSVMTrain(args, opts);
         } else if (strcasecmp(args[1].c_str(), "PRED") == 0) {
             return mainSVMPredict(args, opts);
-        // } else if (strcasecmp(args[1].c_str(), "PREDSL") == 0) {
-        //     return mainSVMPredictSlidingWindow(args, opts);
+        } else if (strcasecmp(args[1].c_str(), "PREDSL") == 0) {
+            return mainSVMPredictSlidingWindow(args, opts);
         } else {
             printUsage(args[0]);
             return EXIT_FAILURE;

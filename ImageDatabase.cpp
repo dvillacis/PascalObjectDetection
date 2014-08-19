@@ -11,20 +11,26 @@ static const char *SIGNATURE = "ImageDataset";
 
 // Image Database class
 
-ImageDatabase::ImageDatabase()
+ImageDatabase::ImageDatabase():
+    _positivesCount(0), 
+    _negativesCount(0)
 {
 }
 
-ImageDatabase::ImageDatabase(const string &dbFilename)
+ImageDatabase::ImageDatabase(const string &dbFilename, const string category):
+    _positivesCount(0), 
+    _negativesCount(0)
 {
-    _category = "car";
+    _category = category;
     load(dbFilename);
 }
 
 ImageDatabase::ImageDatabase(const vector<vector<Detection> > &dets,
                              const vector<string> &fnames):
     _detections(dets),
-    _filenames(fnames)
+    _filenames(fnames),
+    _positivesCount(0), 
+    _negativesCount(0)
 {
 }
 
@@ -43,8 +49,13 @@ vector<Detection> ImageDatabase::getGroundTruth(string imageName)
     for(int i = 0; i < annotation.objects.size(); ++i){
         if(boost::iequals(annotation.objects[i].name,_category))
         {
-            Detection det;
-            LOG(INFO) << "Obtained gt for " << imageName;
+            cv::Rect r(annotation.objects[i].bndbox.xmin,
+                annotation.objects[i].bndbox.ymin,
+                annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin,
+                annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin);
+
+            Detection det(r,0);
+            dets.push_back(det);
         }
     }
 
@@ -71,6 +82,14 @@ void ImageDatabase::load(const string &dbFilename)
             _filenames.push_back(imageName);
             vector<Detection> detections = getGroundTruth(imageName);
             _detections.push_back(detections);
+
+            int label = -1;
+            if(atof(parts[1].c_str()) > 0)
+                label = 1;
+            _labels.push_back(label);
+
+            if(label < 0) _negativesCount++;
+                else if(label > 0) _positivesCount++;
         }
     }
 
@@ -117,4 +136,16 @@ void ImageDatabase::save(const string &dbFilename)
         }
         f << "\n";
     }
+}
+
+ostream & operator << (ostream &s, const ImageDatabase &db)
+{
+    s << "DATABASE INFO\n"
+      << setw(20) << "Original filename:" << " " << db.getDatabaseFilename() << "\n"
+      << setw(20) << "Positives:" << setw(5) << right << db.getPositivesCount() << "\n"
+      << setw(20) << "Negatives:"   << setw(5) << right << db.getNegativesCount() << "\n"
+      << setw(20) << "Unlabeled:"  << setw(5) << right << db.getUnlabeledCount() << "\n"
+      << setw(20) << "Total:"      << setw(5) << right << db.getSize() << "\n";
+
+    return s;
 }

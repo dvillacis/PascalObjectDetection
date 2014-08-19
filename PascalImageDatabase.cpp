@@ -69,14 +69,15 @@ void PascalImageDatabase::load(const char *dbFilename)
     _positivesCount = 0;
 
     ifstream f(dbFilename);
+    LOG(INFO) << "Loading the database";
     if(!f.is_open()) {
-        throw "Could not open file " + (string)dbFilename + " for reading";
+        throw "Could not open file " + _dbFilename + " for reading";
     }
     else{
         string line;
         int i = 0;
         while(getline(f,line)){
-            if(i > 100)
+            if(i > 10)
                 break;
             vector<string> parts;
             boost::split(parts,line,boost::is_any_of(" "),boost::token_compress_on);
@@ -95,16 +96,14 @@ void PascalImageDatabase::load(const char *dbFilename)
 
                 if(roiLabels[i] < 0) _negativesCount++;
                 else if(roiLabels[i] > 0) _positivesCount++;
-
-                //LOG(INFO) << imageName << " - " << roi[i] << " (" << roiLabels[i] << ")";
             }
             //i++;
         }
     }
+    f.close();
 }
 
-void
-PascalImageDatabase::save(const char *dbFilename)
+void PascalImageDatabase::save(const char *dbFilename)
 {
     ofstream f(dbFilename);
     if(!f.is_open()) {

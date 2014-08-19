@@ -32,7 +32,7 @@ public:
     void operator()(const PascalImageDatabase &db, FeatureCollection &FeatureCollection) const;
 
     // Extracts descriptor for each level of imPyr and stores the results in featPyr
-    //void operator()(const SBFloatPyramid &imPyr, FeaturePyramid &featPyr) const;
+    void operator()(const std::vector<Mat> &imPyr, FeatureCollection &featPyr) const;
 
     // Generate a visualization for the feature f, for debuging and inspection purposes
     virtual Mat render(const Feature &f) const = 0;

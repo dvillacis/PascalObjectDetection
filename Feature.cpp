@@ -66,15 +66,14 @@ void FeatureExtractor::operator()(const PascalImageDatabase &db, FeatureCollecti
     }
 }
 
-// void FeatureExtractor::operator()(const SBFloatPyramid &imPyr, FeaturePyramid &featPyr) const
-// {
-//     featPyr.resize(imPyr.getNLevels());
-
-//     Mat x;
-//     for (int i = 0; i < imPyr.getNLevels(); i++) {
-//         this->operator()(imPyr[i], featPyr[i]);
-//     }
-// }
+void FeatureExtractor::operator()(const vector<Mat> &imPyr, FeatureCollection &featPyr) const
+{
+    featPyr.resize(imPyr.size());
+    
+    for (int i = 0; i < imPyr.size(); i++) {
+        this->operator()(imPyr[i], featPyr[i]);
+    }
+}
 
 Mat FeatureExtractor::render(const Feature &f, bool normalizeFeat) const
 {
@@ -381,25 +380,29 @@ void HOGFeatureExtractor::operator()(const Mat &img, Feature &feat) const
     //Converting the image to 
     Mat grayImg;
     cv::cvtColor(img, grayImg, CV_RGB2GRAY);
+
+    //cout << grayImg.size() <<endl;
     resize(grayImg,grayImg,_hog.winSize);
 
     vector<float> extractedFeatures;
 
     // Check for mismatching dimensions
-    if (grayImg.cols != _hog.winSize.width || grayImg.rows != _hog.winSize.height) {
-       extractedFeatures.clear();
-       throw "Error in image dimensions";
-    }
-    
-    _hog.compute(grayImg, extractedFeatures, Size(8,8), Size(0,0));
+    if (grayImg.cols < _hog.winSize.width)
+        resize(grayImg,grayImg,cv::Size(_hog.winSize.width,grayImg.rows));
+    if(grayImg.rows < _hog.winSize.height)
+        resize(grayImg,grayImg,cv::Size(grayImg.cols,_hog.winSize.height));
 
-    feat = Mat::zeros(extractedFeatures.size(),1, CV_32F);
+    _hog.compute(grayImg, extractedFeatures, Size(8,8), Size(0,0));
+    
+
+    feat = Mat::zeros(extractedFeatures.size(),1, CV_32FC2);
 
     for(int i = 0; i < extractedFeatures.size(); i++)
     {
         feat.at<float>(i,0) = extractedFeatures[i];
     }
 
+    extractedFeatures.clear();
     grayImg.release();
 
     /******** END TODO ********/

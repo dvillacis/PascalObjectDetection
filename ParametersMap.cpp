@@ -82,7 +82,7 @@ void saveToFile(const std::string &fname, const std::map<std::string, Parameters
         throw "Could not open file " + fname + " for writing";
     }
 
-    fprintf(f, "%d\n", params.size());
+    fprintf(f, "%d\n", (int)params.size());
     for(map<string, ParametersMap>::const_iterator i = params.begin(); i != params.end(); i++) {
         fprintf(f, "%s\n", i->first.c_str());
         i->second.save(f);
