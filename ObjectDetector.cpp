@@ -10,51 +10,29 @@ using namespace std;
 
 // Object Detector class
 
-ObjectDetector::ObjectDetector(FeatureExtractor* featExtractor, SupportVectorMachine svm):
-    _featExtractor(featExtractor),
-    _svm(svm)
+ObjectDetector::ObjectDetector(vector<float> svmDetector):
+    _svmDetector(svmDetector)
 {
+    _hog.setSVMDetector(_svmDetector);
 }
 
 ObjectDetector::~ObjectDetector()
 {
 }
 
-void ObjectDetector::getDetections(Mat img)//, 
-        //FeatureExtractor* featExtractor, SupportVectorMachine svm)//, 
-        //vector<Detection>& dets)
+void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
 {
     Size winStride = Size(8,8);
     Size padding = Size(32,32);
     double scale0 = 1.05;
-    double finalThreshold = 2.0;
+    double finalThreshold = 0.0;
 
-    Rect o(0,0,img.cols,img.rows);
-    vector<Rect> allCandidates;
+    Mat grayImg;
+    cv::cvtColor(img, grayImg, CV_RGB2GRAY);
 
-    for(int j = 0; j < img.rows; j = j + 128)
-    {
-        for(int i = 0; i < img.cols; i = i + 64)
-        {
-            Rect r(i,j,i+64,j+128);
-            Rect intersection = r & o;
-            Mat patch = img(intersection);
-            resize(patch,patch,Size(64,128));
+    _hog.detectMultiScale(grayImg,found,0,winStride,padding,scale0,finalThreshold,true);
 
-            Feature f;
-            (*_featExtractor)(patch,f);
-            _svm.predict(f);
-            // if(_svm.predictLabel(f) > 0){
-            //     // Possible detection
-            //     LOG(INFO) << "Found possible detection: " << intersection;
-            //     allCandidates.push_back(intersection);
-            // }
-
-    //         //patch.release();
-        }
-    }
-
-    // cout << allCandidates.size() << endl;
+    cout << "Getting detections "<< found.size() <<" !!" << endl;
 }
 
 

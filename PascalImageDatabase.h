@@ -13,6 +13,7 @@ class PascalImageDatabase
 private:
     vector<string> _filenames;
     vector<float> _labels;
+    vector<bool> _flipped;
     int _positivesCount;
     int _negativesCount;
     string _dbFilename;
@@ -42,6 +43,8 @@ public:
     const vector<string> &getFilenames() const { return _filenames; }
     const cv::Rect getRoi(int idx) const { return _rois[idx]; }
     const vector<cv::Rect> getRois() const { return _rois; }
+    const bool isFlipped(int idx) const { return _flipped[idx]; }
+    const vector<bool> getFlipped() const { return _flipped; }
 
     // Info about the database
     int getPositivesCount() const { return _positivesCount; }

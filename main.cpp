@@ -207,7 +207,8 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
     loadFromFile(svmModelFName, svm, &featExtractor);
 
     LOG(INFO) << "Initializing object detector";
-    ObjectDetector obdet(featExtractor, svm);
+    vector<float> svmDetector = svm.getDetector();
+    ObjectDetector obdet(svmDetector);
 
     vector<vector<Detection> > dets(db.getSize());
     for(int i = 0; i < db.getSize(); i++) {
@@ -220,14 +221,15 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
 
         // Extracting detections from the source image
         LOG(INFO) << " --> Extracting detections from the source image";
-        obdet.getDetections(img);//, dets[i]);
+        vector<Rect> found;
+        obdet.getDetections(img, found);
 
-        // for(int j = 0; j < dets[i].size(); j++){
-        //     rectangle(img,dets[i][j].rect.tl(),dets[i][j].rect.br(),Scalar(255,0,0),2);
-        // }
+        for(int j = 0; j < found.size(); j++){
+            rectangle(img,found[j].tl(),found[j].br(),Scalar(255,0,0),2);
+        }
 
-        // imshow("Custom Detection", img);
-        // waitKey(0);
+        imshow("Custom Detection", img);
+        waitKey(0);
 
         img.release();
 

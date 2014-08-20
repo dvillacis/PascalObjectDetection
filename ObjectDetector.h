@@ -13,15 +13,14 @@ using namespace cv;
 class ObjectDetector
 {
 public:
-    ObjectDetector(FeatureExtractor* featExtractor, SupportVectorMachine svm);
+    ObjectDetector(vector<float> svmDetector);
     ~ObjectDetector();
 
-    void getDetections(Mat img);//, FeatureExtractor* featExtractor, SupportVectorMachine svm);//, vector<Detection>& dets);
+    void getDetections(Mat img, vector<Rect>& found);
 
 private:
-
-	FeatureExtractor* _featExtractor;
-	SupportVectorMachine _svm;
+	HOGDescriptor _hog;
+	vector<float> _svmDetector;
 
 };
 

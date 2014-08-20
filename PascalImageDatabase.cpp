@@ -6,7 +6,7 @@
 #include "PascalImageDatabase.h"
 
 using namespace std;
-
+using namespace cv;
 
 //Pascal Image Database class
 
@@ -34,7 +34,7 @@ PascalImageDatabase::PascalImageDatabase(const vector<float> &labels, const vect
     }
 }
 
-void PascalImageDatabase::getROI(string imageName, vector<cv::Rect>& rois, vector<float>& roiLabels)
+void PascalImageDatabase::getROI(string imageName, vector<Rect>& rois, vector<float>& roiLabels)
 {
     vector<string> parts;
     boost::split(parts,imageName,boost::is_any_of("/."),boost::token_compress_on);
@@ -46,7 +46,7 @@ void PascalImageDatabase::getROI(string imageName, vector<cv::Rect>& rois, vecto
     annotation.load(annotationsFilename);
 
     for(int i = 0; i < annotation.objects.size(); ++i){
-        cv::Rect r(annotation.objects[i].bndbox.xmin,
+        Rect r(annotation.objects[i].bndbox.xmin,
             annotation.objects[i].bndbox.ymin,
             annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin,
             annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin);
@@ -85,17 +85,69 @@ void PascalImageDatabase::load(const char *dbFilename)
             float label = atof(parts[1].c_str());
             string imageName = imagePath + parts[0] + ".jpg";
 
-            vector<cv::Rect> roi;
+            vector<Rect> roi;
             vector<float> roiLabels;
             getROI(imageName, roi, roiLabels);
 
-            for(int i = 0; i < roi.size(); ++i) {
-                _filenames.push_back(imageName);
-                _rois.push_back(roi[i]);
-                _labels.push_back(roiLabels[i]);
+            if(label > 0)
+            {
+                for(int i = 0; i < roi.size(); ++i) 
+                {
+                    _filenames.push_back(imageName);
+                    _rois.push_back(roi[i]);
+                    _labels.push_back(roiLabels[i]);
+                    _flipped.push_back(false);
 
-                if(roiLabels[i] < 0) _negativesCount++;
-                else if(roiLabels[i] > 0) _positivesCount++;
+                    if(roiLabels[i] < 0) _negativesCount++;
+                    else if(roiLabels[i] > 0) _positivesCount++;
+
+                    if(roiLabels[i] > 0)
+                    {
+                        // Add a flipped image
+                        _filenames.push_back(imageName);
+                        _rois.push_back(roi[i]);
+                        _labels.push_back(roiLabels[i]);
+                        _flipped.push_back(true);
+
+                        _positivesCount++;
+                    }   
+                }
+            }
+            if(label < 0)
+            {
+                //Get the random negatives
+                for(int i = 0; i <= 10; i++)
+                {
+                    _filenames.push_back(imageName);
+                    _labels.push_back(-1);
+
+                    Mat img = imread(imageName, CV_LOAD_IMAGE_GRAYSCALE);
+                    int x = -1;
+                    int y = -1;
+                    if(img.cols < 64){
+                        resize(img,img,Size(64,img.rows));
+                        x = 0;
+                    }
+                    if(img.rows < 128){
+                        resize(img,img,Size(img.cols,128));
+                        y = 0;
+                    }
+
+                    //cout << "img size( " << img.size() << ") : " << (img.cols-64) << " - " << (img.rows-128) << endl;
+                    if(x == -1)
+                        x = rand() % (img.cols-64);
+                    if(y == -1)
+                        y = rand() % (img.rows-128);
+
+                    Rect r(x,y,64,128);
+
+                    _rois.push_back(r);
+                    _flipped.push_back(false);
+
+                    _negativesCount++;
+
+                    img.release();
+                }
             }
             //i++;
         }

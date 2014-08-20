@@ -37,6 +37,9 @@ public:
     float predictLabel(const Feature &feature) const;
     std::vector<float> predict(const FeatureCollection &fset) const;
 
+    // Get the primal for the svm
+    std::vector<float> getDetector() const;
+
     // Runs classifier at every location of feature feat, returns a
     // single channel image with classifier output at each location.
     void predictSlidingWindow(const Feature &feat, Mat &response) const;
@@ -50,14 +53,14 @@ public:
     void printSVMParameters();
 
     // Get SVM weights in the shape of the original features
-    Feature getWeights() const;
+    //vector<float> getWeights() const;
     double getBiasTerm() const;
 
     // Get default parameters
     static ParametersMap getDefaultParameters();
     ParametersMap getParameters();
 
-    Mat renderSVMWeights(const FeatureExtractor *featExtractor);
+    //Mat renderSVMWeights(const FeatureExtractor *featExtractor);
 
     // Loading and saving model to file
     void load(const std::string &filename);

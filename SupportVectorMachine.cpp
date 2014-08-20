@@ -52,8 +52,8 @@ SupportVectorMachine::SupportVectorMachine(const ParametersMap &params):
         _parameter.kernel_type = PRECOMPUTED;
 
     _parameter.degree = params.getInt(DEGREE);
-    _parameter.gamma = params.getInt(GAMMA);
-    _parameter.coef0 = params.getInt(COEF0);
+    _parameter.gamma = params.getFloat(GAMMA);
+    _parameter.coef0 = params.getFloat(COEF0);
     _parameter.nu = params.getFloat(NU);
     _parameter.cache_size = params.getInt(CACHE_SIZE);
     _parameter.C = params.getFloat(C);
@@ -273,6 +273,42 @@ std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset) 
     return preds;
 }
 
+std::vector<float> SupportVectorMachine::getDetector() const
+{
+    std::vector<float> primal_weights;
+
+    for(unsigned int ssv = 0; ssv < _model->l; ++ssv)
+    {
+        svm_node* singleSupportVector = _model->SV[ssv];
+        double alpha = _model->sv_coef[0][ssv];
+
+        int singleVectorComponent = 0;
+        while(singleSupportVector[singleVectorComponent].index != -1)
+        {
+            if(ssv == 0)
+            {
+                primal_weights.push_back(singleSupportVector[singleVectorComponent].value * alpha);
+                //primal_weights.push_back(singleSupportVector[singleVectorComponent].index);
+            }
+            else
+            {
+                if(singleVectorComponent > primal_weights.size()){
+                    LOG(ERROR) << "Component " << singleVectorComponent << " out of range, should have the same size as the first vector.";
+                    throw "exiting...";
+                }
+                else
+                    primal_weights.at(singleVectorComponent) += (singleSupportVector[singleVectorComponent].value * alpha);
+            }
+            singleVectorComponent++;
+        }
+    }
+    primal_weights.push_back(getBiasTerm());
+
+    cout << primal_weights.size() << endl;
+
+    return primal_weights;
+}
+
 double SupportVectorMachine::getBiasTerm() const
 {
     if(_model == NULL)
@@ -280,33 +316,34 @@ double SupportVectorMachine::getBiasTerm() const
     return _model->rho[0];
 }
 
-Feature SupportVectorMachine::getWeights() const
-{
-    if(_model == NULL)
-        throw "Asking for SVM weights but there is no model. Either load one from file or train one before.";
+// vector<float> SupportVectorMachine::getWeights() const
+// {
+//     if(_model == NULL)
+//         throw "Asking for SVM weights but there is no model. Either load one from file or train one before.";
 
-    Feature weightVec = Mat::zeros(_fVecShape.width,_fVecShape.height,CV_32FC2);
+//     vector<float> weights;
+//     int nSVs = _model->l; // number of support vectors
 
-    // weightVec.origin[0] = _fVecShape.width / 2;
-    // weightVec.origin[1] = _fVecShape.height / 2;
+//     for(int s = 0; s < nSVs; s++) {
+//         double coeff = _model->sv_coef[0][s];
+//         svm_node *sv = _model->SV[s];
 
-    // int nSVs = _model->l; // number of support vectors
+//         if(s == 0)
+//         {
+//             weights.push_back(sv[0])
+//         }
 
-    // for(int s = 0; s < nSVs; s++) {
-    //     double coeff = _model->sv_coef[0][s];
-    //     svm_node *sv = _model->SV[s];
+//         for(int y = 0, d = 0; y < _fVecShape.height; y++) {
+//             float *w = (float *) weightVec.PixelAddress(0, y, 0);
+//             for(int x = 0; x < _fVecShape.width; x++, d++, w++, sv++) {
+//                 assert(sv->index == d);
+//                 *w += sv->value * coeff;
+//             }
+//         }
+//     }
 
-    //     for(int y = 0, d = 0; y < _fVecShape.height; y++) {
-    //         float *w = (float *) weightVec.PixelAddress(0, y, 0);
-    //         for(int x = 0; x < _fVecShape.width; x++, d++, w++, sv++) {
-    //             assert(sv->index == d);
-    //             *w += sv->value * coeff;
-    //         }
-    //     }
-    // }
-
-    return weightVec;
-}
+//     return weightVec;
+// }
 
 void SupportVectorMachine::load(const std::string &filename)
 {
@@ -384,7 +421,6 @@ void SupportVectorMachine::predictSlidingWindow(const Feature &feat, Mat &respon
     // Convolve, BandSelect, this->getWeights(), this->getBiasTerm()
 
     double bias = this->getBiasTerm();
-    Feature weights = this->getWeights();
     Mat convImg = Mat::zeros(feat.cols,feat.rows,CV_32FC2);
 
     /******** END TODO ********/
@@ -398,11 +434,11 @@ void SupportVectorMachine::predictSlidingWindow(const FeatureCollection &featPyr
     }
 }
 
-Mat SupportVectorMachine::renderSVMWeights(const FeatureExtractor *featExtractor)
-{
-    Feature svmW = this->getWeights();
-    svmW -= this->getBiasTerm() / (svmW.size().width * svmW.size().height);
+// Mat SupportVectorMachine::renderSVMWeights(const FeatureExtractor *featExtractor)
+// {
+//     //Feature svmW = this->getWeights();
+//     svmW -= this->getBiasTerm() / (svmW.size().width * svmW.size().height);
 
-    return featExtractor->renderPosNegComponents(svmW);
-}
+//     return featExtractor->renderPosNegComponents(svmW);
+// }
 
