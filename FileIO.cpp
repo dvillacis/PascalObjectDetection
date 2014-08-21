@@ -32,8 +32,7 @@ loadFromFile(const std::string &filename, SupportVectorMachine &svm, FeatureExtr
     fclose(f);
 }
 
-void
-saveToFile(const std::string &filename, const std::vector<Detection> &dets)
+void saveToFile(const std::string &filename, const std::vector<Detection> &dets)
 {
     std::ofstream f(filename.c_str());
 

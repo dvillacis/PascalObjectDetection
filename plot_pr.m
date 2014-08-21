@@ -73,7 +73,7 @@ for k = 1:2:length(varargin)
             
             plot(X, Y, '-', 'Color', colors(plot_num,:));
             
-            pr_names{plot_num} = sprintf('%s (AUC: %.4f)', pr_names{plot_num}, trapz(X, Y)); 
+            pr_names{plot_num} = sprintf('%s (AP: %.4f)', pr_names{plot_num}, trapz(X, Y)); 
             
             plot_num = plot_num + 1;
     end

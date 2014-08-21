@@ -7,6 +7,7 @@
 #include "PrecisionRecall.h"
 #include "ObjectDetector.h"
 #include "FileIO.h"
+#include "PrincipalComponentAnalysis.h"
 
 
 using namespace std;
@@ -19,6 +20,7 @@ void printUsage(const std::string &execName)
     printf("\t%s TRAIN   -f <category name> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
     printf("\t%s PRED    -f <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
     printf("\t%s PREDSL  -f <category name> [-p <in:params>] <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s PCA     -f <category name> <in:database> [<out:pca_data.dat>]", execName.c_str());
 }
 
 void parseCommandLineOptions(int argc, char **argv, vector<std::string> &args, map<std::string, string> &opts)
@@ -269,6 +271,50 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
     return EXIT_SUCCESS;
 }
 
+int mainPCA(const vector<string> &args, const map<string, string> &opts)
+{
+    if(args.size() < 4) {
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
+    }
+
+    LOG(INFO) << "Performing a PCA analysis on the images database";
+
+    string dbFName = args[2];
+    string pcaFName = args[3];
+    string category;
+
+    LOG(INFO) << "Obtaining feature extractor parameters";
+    ParametersMap featParams;
+    if(opts.count("-f") == 1) {
+        category = opts.at("-f");
+        featParams = FeatureExtractor::getDefaultParameters("hog");
+    } else {
+        throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
+    }
+
+    LOG(INFO) << "Creating the image database";
+    PascalImageDatabase db(dbFName.c_str(), category);
+    cout << db << endl;
+
+    FeatureExtractor *featExtractor = FeatureExtractor::create(featParams);
+
+    LOG(INFO) << "Category: " << category;
+
+    LOG(INFO) << "Extracting HOG features";
+    FeatureCollection features;
+    (*featExtractor)(db, features);
+
+    LOG(INFO) << "Performing PCA on the obtained HOG features";
+    Mat data;
+    PrincipalComponentAnalysis pca;
+    pca.pre_process(features,data);
+    pca.compute(data,db);
+    pca.savePCAFile(pcaFName);
+
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv)
 {
     FLAGS_logtostderr = true;
@@ -286,6 +332,8 @@ int main(int argc, char **argv)
             return mainSVMPredict(args, opts);
         } else if (strcasecmp(args[1].c_str(), "PREDSL") == 0) {
             return mainSVMPredictSlidingWindow(args, opts);
+        } else if (strcasecmp(args[1].c_str(), "PCA") == 0) {
+            return mainPCA(args,opts);
         } else {
             printUsage(args[0]);
             return EXIT_FAILURE;

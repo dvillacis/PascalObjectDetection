@@ -36,6 +36,7 @@ ADD_LIBRARY(od
 	Detection.h                                         Detection.cpp   
 	FileIO.h                                            FileIO.cpp
 	ParametersMap.h                                     ParametersMap.cpp
+	PrincipalComponentAnalysis.h						PrincipalComponentAnalysis.cpp
 	Common.h    
 )
 
