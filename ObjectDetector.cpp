@@ -22,6 +22,7 @@ ObjectDetector::~ObjectDetector()
 
 void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
 {
+    //TODO: See Dalals and Triggs paper
     Size winStride = Size(8,8);
     Size padding = Size(32,32);
     double scale0 = 1.05;
@@ -30,7 +31,7 @@ void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
     Mat grayImg;
     cv::cvtColor(img, grayImg, CV_RGB2GRAY);
 
-    _hog.detectMultiScale(grayImg,found,0,winStride,padding,scale0,finalThreshold,true);
+    _hog.detectMultiScale(grayImg,found,0,winStride,padding,scale0,finalThreshold);
 
     cout << "Getting detections "<< found.size() <<" !!" << endl;
 }

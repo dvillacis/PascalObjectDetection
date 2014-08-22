@@ -6,6 +6,11 @@
 
 using namespace std;
 
+//! Pascal Image Database Class
+/*!
+    This class stores the list of images provided in the PASCAL VOC format.
+*/
+
 class ImageDatabase
 {
 private:
@@ -20,13 +25,27 @@ private:
     vector<float> _labels;
 
 public:
-    // Create a new database.
+    //! Constructor
     ImageDatabase();
+
+    //! Constructor
+    /*!
+        \param dbFilename Path where the input image list is located.
+        \param category  Class that we want to train.
+    */
     ImageDatabase(const string &dbFilename, const string category);
     ImageDatabase(const vector<vector<Detection> > &dets, const vector<string> &fnames);
 
-    // Load a database from file.
+    //! Load a database from file.
+    /*!
+        \dbFilename Path where the input image list is located.
+    */
     void load(const string &dbFilename);
+
+    //! Save a database to file.
+    /*!
+        \dbFilename Path where the input image list is located.
+    */
     void save(const string &dbFilename);
 
     // Accessors

@@ -150,8 +150,6 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
     cv::Size shape = fset[0].size();
     int dim = shape.width * shape.height;
 
-    //cross_validation = 0;
-
     // Allocate memory
     svm_problem problem;
     problem.l = nVecs;
@@ -275,38 +273,38 @@ std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset) 
 
 std::vector<float> SupportVectorMachine::getDetector() const
 {
-    std::vector<float> primal_weights;
+    if(_model == NULL)
+        throw "Asking for SVM bias term but there is no model. Either load one from file or train one before.";
 
-    for(unsigned int ssv = 0; ssv < _model->l; ++ssv)
+    std::vector<float> weights;
+    
+    const double * const * sv_coef = _model->sv_coef;
+    const svm_node * const *SV = _model->SV;
+    int l = _model->l;
+    _model->label;
+
+    const svm_node* p_tmp = SV[0];
+    int len = 0;
+    while(p_tmp->index != -1)
     {
-        svm_node* singleSupportVector = _model->SV[ssv];
-        double alpha = _model->sv_coef[0][ssv];
+        len++;
+        p_tmp++;
+    }
 
-        int singleVectorComponent = 0;
-        while(singleSupportVector[singleVectorComponent].index != -1)
+    weights.resize(len+1);
+
+    for(int i = 0; i < l; i++)
+    {
+        double svcoef = sv_coef[0][i];
+        const svm_node* p = SV[i];
+        while( p->index != -1)
         {
-            if(ssv == 0)
-            {
-                primal_weights.push_back(singleSupportVector[singleVectorComponent].value * alpha);
-                //primal_weights.push_back(singleSupportVector[singleVectorComponent].index);
-            }
-            else
-            {
-                if(singleVectorComponent > primal_weights.size()){
-                    LOG(ERROR) << "Component " << singleVectorComponent << " out of range, should have the same size as the first vector.";
-                    throw "exiting...";
-                }
-                else
-                    primal_weights.at(singleVectorComponent) += (singleSupportVector[singleVectorComponent].value * alpha);
-            }
-            singleVectorComponent++;
+            weights[p->index-1] += float(svcoef * p->value);
+            p++;
         }
     }
-    primal_weights.push_back(getBiasTerm());
-
-    cout << primal_weights.size() << endl;
-
-    return primal_weights;
+    weights[len] = float(-_model->rho[0]);
+    return weights;
 }
 
 double SupportVectorMachine::getBiasTerm() const

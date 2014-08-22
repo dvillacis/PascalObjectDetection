@@ -8,6 +8,8 @@
 using namespace std;
 
 // Defining PASCAL Annotation 
+
+//! Pascal SOURCE node annotation
 struct source_annotation
 {
     string database;
@@ -16,19 +18,27 @@ struct source_annotation
     string flickrid;
 };
 
+//! Pascal OWNER node annotation
 struct owner_annotation
 {
-    string flickrid;
-    string name;
+    //! Flick ID of the image's author
+    string flickrid; 
+    //! Name of the image's author
+    string name; 
 };
 
+//! Pascal SIZE node annotation
 struct size_annotation
 {
-    int width;
-    int height;
-    int depth;
+    //! Widht of the original image
+    int width; 
+    //! Height of the original image
+    int height; 
+    //! Depth of the original image
+    int depth; 
 };
 
+//! Pascal BNDBOX node annotation
 struct bndbox_annotation
 {
     int xmin;
@@ -37,15 +47,21 @@ struct bndbox_annotation
     int ymax;
 };
 
+//! Pascal OBJECT node annotation
 struct object_annotation
 {
+    //! Category name of the object
     string name;
+    //! Pose of the object in the picture
     string pose;
+    //! Define if the object is truncated in the picture
     bool truncated;
     bool difficult;
+    //! Bounding Box containing the object in the image 
     bndbox_annotation bndbox;
 };
 
+//! Pascal PASCAL node annotation
 struct pascal_annotation
 {
     string folder;
@@ -59,6 +75,10 @@ struct pascal_annotation
     void load(const string &annotationsFilename);
 };
 
+//! Load the PASCAL XML Annotation
+/*!
+    \param annotationsFilename Path where the annotation file for the image is located.
+*/
 inline void pascal_annotation::load(const string &annotationsFilename)
 {
     using boost::property_tree::ptree;

@@ -12,13 +12,16 @@ void FeatureExtractor::operator()(const PascalImageDatabase &db, FeatureCollecti
     int n = db.getSize();
 
     feats.resize(n);
+    float percent;
     for(int i = 0; i < n; i++) {
-        Mat img = imread(db.getFilename(i).c_str());
-        if(img.cols < 64)
-            resize(img,img,Size(64,img.rows));
-        if(img.rows < 128)
-            resize(img,img,Size(img.cols,128));
+        // Print progress string
+        if((i+1)%1000 == 0 || (i+1) == n)
+        {
+            percent = ((i+1)*100)/n;
+            cout << percent << " ... ";
+        }
 
+        Mat img = imread(db.getFilename(i).c_str());
         Rect roi = db.getRoi(i);
         bool flipped = db.isFlipped(i);
         //LOG(INFO) << " --> Extracting features from: " << db.getFilename(i) << " - " << img.size() << " - " << db.isFlipped(i);
@@ -39,15 +42,8 @@ FeatureExtractor * FeatureExtractor::create(ParametersMap params)
     std::string featureType = params.getStr(FEATURE_TYPE_KEY);
     params.erase(FEATURE_TYPE_KEY);
 
-    if(strcasecmp(featureType.c_str(), "hog") == 0) return new HOGFeatureExtractor(params);
-    // else if(strcasecmp(featureType.c_str(), "tig"    ) == 0) return new TinyImageGradFeatureExtractor(params);
-    // else if(strcasecmp(featureType.c_str(), "hog"    ) == 0) return new HOGFeatureExtractor(params);
-
-    // // Implement other features or call a feature extractor with a different set
-    // // of parameters by adding more calls here.
-    // else if(strcasecmp(featureType.c_str(), "custom1") == 0) throw "not implemented";
-    // else if(strcasecmp(featureType.c_str(), "custom2") == 0) throw "not implemented";
-    // else if(strcasecmp(featureType.c_str(), "custom3") == 0) throw "not implemented";
+    if(strcasecmp(featureType.c_str(), "hog") == 0) 
+        return new HOGFeatureExtractor(params);
     else {
         throw "Unknown feature type: " + featureType;
     }
@@ -56,15 +52,8 @@ FeatureExtractor * FeatureExtractor::create(ParametersMap params)
 ParametersMap FeatureExtractor::getDefaultParameters(const std::string &featureType)
 {
     ParametersMap params;
-    if(strcasecmp(featureType.c_str(), "hog"     ) == 0) params = HOGFeatureExtractor::getDefaultParameters();
-    // else if(strcasecmp(featureType.c_str(), "tig"    ) == 0) params = TinyImageGradFeatureExtractor::getDefaultParameters();
-    // else if(strcasecmp(featureType.c_str(), "hog"    ) == 0) params = HOGFeatureExtractor::getDefaultParameters();
-
-    // // Implement other features or call a feature extractor with a different set
-    // // of parameters by adding more calls here.
-    // else if(strcasecmp(featureType.c_str(), "custom1") == 0) throw "not implemented";
-    // else if(strcasecmp(featureType.c_str(), "custom2") == 0) throw "not implemented";
-    // else if(strcasecmp(featureType.c_str(), "custom3") == 0) throw "not implemented";
+    if(strcasecmp(featureType.c_str(), "hog"     ) == 0) 
+        params = HOGFeatureExtractor::getDefaultParameters();
     else {
         throw "Unknown feature type: " + featureType;
     }
@@ -133,6 +122,10 @@ void HOGFeatureExtractor::operator()(const Mat &img, Feature &feat, bool isFlipp
 
     if(isFlipped == true)
         flip(grayImg, grayImg,1);
+
+    // cout << img.size() << endl;
+    // imshow("Training image",img);
+    // waitKey(0);
 
     vector<float> extractedFeatures;
 

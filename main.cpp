@@ -46,6 +46,8 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
+    double t = (double)getTickCount();
+
     string dbFName = args[2];
     string svmModelFName = args[3];
     string category;
@@ -107,6 +109,10 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     saveToFile(svmModelFName, svm, featExtractor);
 
     delete featExtractor;
+
+    t = (double)getTickCount() - t;
+    LOG(INFO) << "Training completed in " << t/getTickFrequency() << " seconds.";
+
     return EXIT_SUCCESS;
 }
 
@@ -115,6 +121,8 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
     if(args.size() < 4 || args.size() > 6) {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
+
+    double t = (double)getTickCount();
 
     string dbFName = args[2];
     string svmModelFName = args[3];
@@ -153,6 +161,8 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
         PascalImageDatabase predsDb(preds, db.getFilenames());
         predsDb.save(predsFName.c_str());
     }
+
+    LOG(INFO) << "Cross Validation completed in " << t/getTickFrequency() << " seconds.";
 
     return EXIT_SUCCESS;
 }

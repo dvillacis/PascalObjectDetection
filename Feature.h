@@ -10,12 +10,19 @@ using namespace cv;
 typedef Mat Feature;
 typedef std::vector<Feature> FeatureCollection;
 
-// Abstract super class for all feature extractors.
+//! Feature Extraction Class
+/*!
+    This class implements an abstract feature extractor, 
+    it receives a database of images and return a vector of features obtained after the image processing.
+*/
+
 class FeatureExtractor
 {
 public:
-    // TODO: document this
+    //! Constructor
     FeatureExtractor(const ParametersMap &params = ParametersMap()) {};
+
+    //! Destructor
     virtual ~FeatureExtractor() {};
     virtual ParametersMap getParameters() const = 0;
     virtual std::string getFeatureType() const = 0;
@@ -51,7 +58,13 @@ public:
     static ParametersMap getDefaultParameters(const std::string &featureType);
 };
 
-// Histogram of Oriented Gradients feature.
+//! HOG Feature Extraction Class
+/*!
+    This class implements a HOG feature extractor, 
+    it receives a database of images and return a vector of HOG features obtained after the image processing.
+    This is an inherited class from the FeatureExtractor class.
+*/
+
 class HOGFeatureExtractor : public FeatureExtractor
 {
 private:
@@ -69,6 +82,7 @@ public:
     ParametersMap getParameters() const;
 
     //HOGFeatureExtractor(int nAngularBins = 18, bool unsignedGradients = true, int cellSize = 6);
+    //! Constructor
     HOGFeatureExtractor(const ParametersMap &params = ParametersMap());
 
     void operator()(const Mat &image, Feature &feat, bool isFlipped) const;

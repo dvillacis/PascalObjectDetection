@@ -65,8 +65,7 @@ PrecisionRecall::PrecisionRecall(const std::vector<float> &gt, const std::vector
 	}
 }
 
-void
-PrecisionRecall::save(const char* filename) const
+void PrecisionRecall::save(const char* filename) const
 {
 	std::ofstream f(filename);
 
@@ -78,8 +77,7 @@ PrecisionRecall::save(const char* filename) const
 	}
 }
 
-double 
-PrecisionRecall::getBestThreshold() const
+double  PrecisionRecall::getBestThreshold() const
 {
 	double bestFMeasure = -1, bestThreshold = -1;
 	for(std::vector<PecisionRecallPoint>::const_iterator pr = _data.begin(); pr != _data.end(); pr++) {
