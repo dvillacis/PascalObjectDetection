@@ -14,20 +14,25 @@ void FeatureExtractor::operator()(const PascalImageDatabase &db, FeatureCollecti
     feats.resize(n);
     float percent;
     for(int i = 0; i < n; i++) {
+        printf("\033[s");
         // Print progress string
         if((i+1)%1000 == 0 || (i+1) == n)
         {
             percent = ((i+1)*100)/n;
-            cout << percent << " ... ";
+            cout << percent << "% ... ";
+            fflush(stdout);
+            printf("\033[u");
         }
 
         Mat img = imread(db.getFilename(i).c_str());
         Rect roi = db.getRoi(i);
         bool flipped = db.isFlipped(i);
-        //LOG(INFO) << " --> Extracting features from: " << db.getFilename(i) << " - " << img.size() << " - " << db.isFlipped(i);
         Mat patch = img(roi);
+        // cout << "************" << endl;
+        // cout << db.getLabel(i) << endl;
         (*this)(patch, feats[i], flipped);
     }
+    cout << endl;
 }
 
 FeatureExtractor * FeatureExtractor::create(const std::string &featureType, const ParametersMap &params)

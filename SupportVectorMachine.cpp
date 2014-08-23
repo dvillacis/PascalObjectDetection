@@ -263,8 +263,21 @@ float SupportVectorMachine::predictLabel(const Feature &feature) const
 
 std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset) const
 {
-    std::vector<float> preds(fset.size());
-    for(int i = 0; i < fset.size(); i++) {
+    int n = fset.size();
+    std::vector<float> preds(n);
+    for(int i = 0; i < n; i++) {
+        float percent;
+        printf("\033[s");
+        // Print progress string
+        if((i+1)%1000 == 0 || (i+1) == n)
+        {
+            percent = ((i+1)*100)/n;
+            cout << percent << "% ... ";
+            fflush(stdout);
+            printf("\033[u");
+        }
+
+
         preds[i] = predict(fset[i]);
     }
 

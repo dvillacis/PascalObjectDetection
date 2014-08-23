@@ -16,11 +16,11 @@ void printUsage(const std::string &execName)
 {
     printf("Usage:\n");
     printf("\t%s -h\n", execName.c_str());
-    printf("\t%s TRAIN   -p <in:params> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
-    printf("\t%s TRAIN   -f <category name> [-c <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
-    printf("\t%s PRED    -f <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
-    printf("\t%s PREDSL  -f <category name> [-p <in:params>] <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
-    printf("\t%s PCA     -f <category name> <in:database> [<out:pca_data.dat>]", execName.c_str());
+    printf("\t%s TRAIN   -c <category name> [-p <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
+    printf("\t%s PRED    -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s PREDSL  -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s PCA     -c <category name> <in:database> [<out:pca_data.dat>]", execName.c_str());
+    printf("\t%s VIDEO   <in:svm model>", execName.c_str());
 }
 
 void parseCommandLineOptions(int argc, char **argv, vector<std::string> &args, map<std::string, string> &opts)
@@ -52,23 +52,11 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     string svmModelFName = args[3];
     string category;
 
-    LOG(INFO) << "Obtaining feature extractor parameters";
+    LOG(INFO) << "Creating feature extractor";
     ParametersMap featParams;
-    if(opts.count("-f") == 1) {
-        category = opts.at("-f");
+    if(opts.count("-c") == 1) {
+        category = opts.at("-c");
         featParams = FeatureExtractor::getDefaultParameters("hog");
-    } else if(opts.count("-p") == 1) {
-        string paramsFName = opts.at("-p");
-
-        map<string, ParametersMap> allParams;
-        loadFromFile(paramsFName, allParams);
-
-        if(allParams.count(FEATURE_EXTRACTOR_KEY)) {
-            LOG(INFO) << "Using feature extractor paramaters from file ";
-            featParams = allParams[FEATURE_EXTRACTOR_KEY];
-        } else {
-            LOG(INFO) << "Using default parameters for feature extractor";
-        }
     } else {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
@@ -87,8 +75,8 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
 
     LOG(INFO) << "Obtaining svm parameters";
     ParametersMap svmParams;
-    if(opts.count("-c") == 1){
-        string paramsSVMFName = opts.at("-c");
+    if(opts.count("-p") == 1){
+        string paramsSVMFName = opts.at("-p");
         map<string, ParametersMap> allParams;
         loadFromFile(paramsSVMFName, allParams);
         if(allParams.count(SVM_CONFIG_KEY)){
@@ -130,8 +118,8 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
     string predsFName = (args.size() >= 6) ? args[5] : "";
 
     string category;
-    if(opts.count("-f") == 1) {
-        category = opts.at("-f");
+    if(opts.count("-c") == 1) {
+        category = opts.at("-c");
     } else {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
@@ -203,8 +191,8 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
     // }
 
     string category;
-    if(opts.count("-f") == 1) {
-        category = opts.at("-f");
+    if(opts.count("-c") == 1) {
+        category = opts.at("-c");
     } else {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
@@ -219,10 +207,12 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
     loadFromFile(svmModelFName, svm, &featExtractor);
 
     LOG(INFO) << "Initializing object detector";
-    vector<float> svmDetector = svm.getDetector();
-    ObjectDetector obdet(svmDetector);
+    //vector<float> svmDetector = svm.getDetector();
+    ObjectDetector obdet;
+    obdet.setDetector(HOGDescriptor::getDefaultPeopleDetector());
 
     vector<vector<Detection> > dets(db.getSize());
+
     for(int i = 0; i < db.getSize(); i++) {
         LOG(INFO) << "Processing image " << setw(4) << (i + 1) << " of " << db.getSize();
 
@@ -264,19 +254,19 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
         
     }
 
-    ImageDatabase predsDb(dets, db.getFilenames());
+    // ImageDatabase predsDb(dets, db.getFilenames());
 
-    LOG(INFO) << "Computing Precision Recall Curve";
-    vector<float> labels, response;
-    int nGroundTruthDetections;
-    computeLabels(db.getDetections(), predsDb.getDetections(), labels, response, nGroundTruthDetections);
+    // LOG(INFO) << "Computing Precision Recall Curve";
+    // vector<float> labels, response;
+    // int nGroundTruthDetections;
+    // computeLabels(db.getDetections(), predsDb.getDetections(), labels, response, nGroundTruthDetections);
 
-    LOG(INFO) << "Computing Precision Recall Curve";
-    PrecisionRecall pr(labels, response, nGroundTruthDetections);
-    LOG(INFO) << "Average precision: " << pr.getAveragePrecision();
+    // LOG(INFO) << "Computing Precision Recall Curve";
+    // PrecisionRecall pr(labels, response, nGroundTruthDetections);
+    // LOG(INFO) << "Average precision: " << pr.getAveragePrecision();
 
-    if(predsFName.size()) predsDb.save(predsFName.c_str());
-    if(prFName.size()) pr.save(prFName.c_str());
+    // if(predsFName.size()) predsDb.save(predsFName.c_str());
+    // if(prFName.size()) pr.save(prFName.c_str());
 
     return EXIT_SUCCESS;
 }
@@ -295,8 +285,8 @@ int mainPCA(const vector<string> &args, const map<string, string> &opts)
 
     LOG(INFO) << "Obtaining feature extractor parameters";
     ParametersMap featParams;
-    if(opts.count("-f") == 1) {
-        category = opts.at("-f");
+    if(opts.count("-c") == 1) {
+        category = opts.at("-c");
         featParams = FeatureExtractor::getDefaultParameters("hog");
     } else {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
@@ -325,6 +315,41 @@ int mainPCA(const vector<string> &args, const map<string, string> &opts)
     return EXIT_SUCCESS;
 }
 
+int mainVIDEO(const vector<string> &args, const map<string, string> &opts)
+{
+    string svmModelFName = args[2];
+
+    LOG(INFO) << "Loading SVM model and features extractor from file";
+    SupportVectorMachine svm;
+    FeatureExtractor *featExtractor = NULL;
+    loadFromFile(svmModelFName, svm, &featExtractor);
+
+    LOG(INFO) << "Initializing object detector";
+    //vector<float> svmDetector = svm.getDetector();
+    ObjectDetector obdet;
+    obdet.setDetector(svm.getDetector());
+
+    VideoCapture capture(0);
+    if(!capture.isOpened())
+        throw "Couldnt open the camera";
+    capture.set(CV_CAP_PROP_FRAME_WIDTH, 156);
+    capture.set(CV_CAP_PROP_FRAME_HEIGHT, 156);
+    string windowName = "Live Feed Detection";
+    for(;;)
+    {
+        Mat frame;
+        vector<Rect> found;
+        capture >> frame;
+        obdet.getDetections(frame,found);
+        for(int j = 0; j < found.size(); j++){
+            rectangle(frame,found[j].tl(),found[j].br(),Scalar(255,0,0),2);
+        }
+        imshow(windowName,frame);
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main(int argc, char **argv)
 {
     FLAGS_logtostderr = true;
@@ -344,6 +369,8 @@ int main(int argc, char **argv)
             return mainSVMPredictSlidingWindow(args, opts);
         } else if (strcasecmp(args[1].c_str(), "PCA") == 0) {
             return mainPCA(args,opts);
+        } else if (strcasecmp(args[1].c_str(), "VIDEO") == 0) {
+            return mainVIDEO(args,opts);
         } else {
             printUsage(args[0]);
             return EXIT_FAILURE;

@@ -98,29 +98,32 @@ void PascalImageDatabase::load(const char *dbFilename)
                     Mat roiImg = img(roi[i]);
                     _filenames.push_back(imageName);
                     _labels.push_back(roiLabels[i]);
+                    _rois.push_back(roi[i]);
 
-                    if(roiImg.cols <= 64 || roiImg.rows <= 128){
-                        _rois.push_back(roi[i]);
-                    }
-                    else
+                    if(roiLabels[i] > 0)
                     {
-                        int x = rand() % (roiImg.cols-64);
-                        int y = rand() % (roiImg.rows-128);
-                        Rect r(x,y,64,128);
-                        _rois.push_back(r);
-                        _flipped.push_back(false);
+                        // Add a flipped image
+                        _filenames.push_back(imageName);
+                        _labels.push_back(roiLabels[i]);
+                        _rois.push_back(roi[i]);
+                        _flipped.push_back(true);
 
-                        if(roiLabels[i] > 0)
-                        {
-                            // Add a flipped image
-                            _filenames.push_back(imageName);
-                            _labels.push_back(roiLabels[i]);
-                            _rois.push_back(r);
-                            _flipped.push_back(true);
+                        _positivesCount++;
+                    }  
 
-                            _positivesCount++;
-                        }   
-                    }
+                    // if(roiImg.cols <= 64 || roiImg.rows <= 128){
+                    //     _rois.push_back(roi[i]);
+                    // }
+                    // else
+                    // {
+                    //     int x = rand() % (roiImg.cols-64);
+                    //     int y = rand() % (roiImg.rows-128);
+                    //     Rect r(x,y,64,128);
+                    //     _rois.push_back(r);
+                    //     _flipped.push_back(false);
+
+                         
+                    // }
 
                     if(roiLabels[i] < 0) _negativesCount++;
                     else if(roiLabels[i] > 0) _positivesCount++;
