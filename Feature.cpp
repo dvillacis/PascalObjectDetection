@@ -2,9 +2,9 @@
 
 using namespace cv;
 
-void FeatureExtractor::operator()(const Mat &img, Feature &feat, bool isFlipped) const
+void FeatureExtractor::operator()(Mat &img, Feature &feat) const
 {
-    this->operator()(img, feat, isFlipped);
+    this->operator()(img, feat);
 }
 
 void FeatureExtractor::operator()(const PascalImageDatabase &db, FeatureCollection &feats) const
@@ -28,9 +28,18 @@ void FeatureExtractor::operator()(const PascalImageDatabase &db, FeatureCollecti
         Rect roi = db.getRoi(i);
         bool flipped = db.isFlipped(i);
         Mat patch = img(roi);
-        // cout << "************" << endl;
-        // cout << db.getLabel(i) << endl;
-        (*this)(patch, feats[i], flipped);
+        if(flipped == true)
+            flip(patch, patch,1);
+
+        // if(db.getLabel(i)>0){
+        //     rectangle(img,roi,Scalar(255,0,0),2);
+        //     imshow("Patch", img);
+        //     cout << "************" << endl;
+        //     cout << db.getLabel(i) << " - " << flipped << endl;
+        //     waitKey(0);
+        // }
+
+        (*this)(patch, feats[i]);
     }
     cout << endl;
 }
@@ -93,9 +102,9 @@ const char *CELL_SIZE_KEY          = "cell_size";
 ParametersMap HOGFeatureExtractor::getDefaultParameters()
 {
     ParametersMap params;
-    params.set(N_ANGULAR_BINS_KEY    , 18);
+    params.set(N_ANGULAR_BINS_KEY    , 9);
     params.set(UNSIGNED_GRADIENTS_KEY, 1);
-    params.set(CELL_SIZE_KEY         , 6);
+    params.set(CELL_SIZE_KEY         , 16);
     return params;
 }
 
@@ -116,17 +125,21 @@ HOGFeatureExtractor::HOGFeatureExtractor(const ParametersMap &params)
 
 }
 
-void HOGFeatureExtractor::operator()(const Mat &img, Feature &feat, bool isFlipped) const
+void HOGFeatureExtractor::operator()(Mat &img, Feature &feat) const
 {
     //Converting the image to grayscale
-    Mat grayImg;
-    cv::cvtColor(img, grayImg, CV_RGB2GRAY);
+    // Mat grayImg;
+    // cv::cvtColor(img, grayImg, CV_RGB2GRAY);
 
     //cout << grayImg.size() <<endl;
-    resize(grayImg,grayImg,_hog.winSize);
+    // blur(img, img, Size(3,3));
+    // Canny(img, img, 2, 2*3, 3);
+    HOGDescriptor hog(Size(64,128),Size(16,16),Size(8,8),Size(8,8),9);
 
-    if(isFlipped == true)
-        flip(grayImg, grayImg,1);
+    resize(img,img,hog.winSize);
+
+    // if(isFlipped == true)
+    //     flip(grayImg, grayImg,1);
 
     // cout << img.size() << endl;
     // imshow("Training image",img);
@@ -135,21 +148,220 @@ void HOGFeatureExtractor::operator()(const Mat &img, Feature &feat, bool isFlipp
     vector<float> extractedFeatures;
 
     // Check for mismatching dimensions
-    if (grayImg.cols < _hog.winSize.width)
-        resize(grayImg,grayImg,cv::Size(_hog.winSize.width,grayImg.rows));
-    if(grayImg.rows < _hog.winSize.height)
-        resize(grayImg,grayImg,cv::Size(grayImg.cols,_hog.winSize.height));
+    // if (grayImg.cols < _hog.winSize.width)
+    //     resize(grayImg,grayImg,cv::Size(_hog.winSize.width,grayImg.rows));
+    // if(grayImg.rows < _hog.winSize.height)
+    //     resize(grayImg,grayImg,cv::Size(grayImg.cols,_hog.winSize.height));
 
-    _hog.compute(grayImg, extractedFeatures, Size(8,8), Size(0,0));
+    hog.compute(img, extractedFeatures, Size(8,8), Size(0,0));
     
+    // Mat test;
+    // renderHOG(img, test, extractedFeatures, hog.winSize, hog.cellSize, 1, 1),
+    // imshow("HOG",test);
+    // waitKey(0);
 
-    feat = Mat::zeros(extractedFeatures.size(),1, CV_32FC2);
+    feat = Mat::zeros(extractedFeatures.size(),1, CV_32FC1);
 
     for(int i = 0; i < extractedFeatures.size(); i++)
     {
-        feat.at<float>(i,0) = extractedFeatures[i];
+        feat.at<float>(i) = extractedFeatures[i];
     }
 
     extractedFeatures.clear();
-    grayImg.release();
+    //grayImg.release();
 }
+
+Mat HOGFeatureExtractor::renderHOG(Mat& img, Mat& out, vector<float>& descriptorValues, 
+    Size winSize, Size cellSize, int scaleFactor, double viz_factor) const
+{
+    resize(img, out, Size(img.cols*scaleFactor, img.rows*scaleFactor));
+ 
+    int gradientBinSize = 9;
+    // dividing 180° into 9 bins, how large (in rad) is one bin?
+    float radRangeForOneBin = 3.14/(float)gradientBinSize; 
+ 
+    // prepare data structure: 9 orientation / gradient strenghts for each cell
+    int cells_in_x_dir = winSize.width / cellSize.width;
+    int cells_in_y_dir = winSize.height / cellSize.height;
+    int totalnrofcells = cells_in_x_dir * cells_in_y_dir;
+    float*** gradientStrengths = new float**[cells_in_y_dir];
+    int** cellUpdateCounter   = new int*[cells_in_y_dir];
+    for (int y=0; y<cells_in_y_dir; y++)
+    {
+        gradientStrengths[y] = new float*[cells_in_x_dir];
+        cellUpdateCounter[y] = new int[cells_in_x_dir];
+        for (int x=0; x<cells_in_x_dir; x++)
+        {
+            gradientStrengths[y][x] = new float[gradientBinSize];
+            cellUpdateCounter[y][x] = 0;
+ 
+            for (int bin=0; bin<gradientBinSize; bin++)
+                gradientStrengths[y][x][bin] = 0.0;
+        }
+    }
+ 
+    // nr of blocks = nr of cells - 1
+    // since there is a new block on each cell (overlapping blocks!) but the last one
+    int blocks_in_x_dir = cells_in_x_dir - 1;
+    int blocks_in_y_dir = cells_in_y_dir - 1;
+ 
+    // compute gradient strengths per cell
+    int descriptorDataIdx = 0;
+    int cellx = 0;
+    int celly = 0;
+ 
+    for (int blockx=0; blockx<blocks_in_x_dir; blockx++)
+    {
+        for (int blocky=0; blocky<blocks_in_y_dir; blocky++)            
+        {
+            // 4 cells per block ...
+            for (int cellNr=0; cellNr<4; cellNr++)
+            {
+                // compute corresponding cell nr
+                int cellx = blockx;
+                int celly = blocky;
+                if (cellNr==1) celly++;
+                if (cellNr==2) cellx++;
+                if (cellNr==3)
+                {
+                    cellx++;
+                    celly++;
+                }
+ 
+                for (int bin=0; bin<gradientBinSize; bin++)
+                {
+                    float gradientStrength = descriptorValues[ descriptorDataIdx ];
+                    descriptorDataIdx++;
+ 
+                    gradientStrengths[celly][cellx][bin] += gradientStrength;
+ 
+                } // for (all bins)
+ 
+ 
+                // note: overlapping blocks lead to multiple updates of this sum!
+                // we therefore keep track how often a cell was updated,
+                // to compute average gradient strengths
+                cellUpdateCounter[celly][cellx]++;
+ 
+            } // for (all cells)
+ 
+ 
+        } // for (all block x pos)
+    } // for (all block y pos)
+ 
+ 
+    // compute average gradient strengths
+    for (int celly=0; celly<cells_in_y_dir; celly++)
+    {
+        for (int cellx=0; cellx<cells_in_x_dir; cellx++)
+        {
+ 
+            float NrUpdatesForThisCell = (float)cellUpdateCounter[celly][cellx];
+ 
+            // compute average gradient strenghts for each gradient bin direction
+            for (int bin=0; bin<gradientBinSize; bin++)
+            {
+                gradientStrengths[celly][cellx][bin] /= NrUpdatesForThisCell;
+            }
+        }
+    }
+ 
+ 
+    //cout << "descriptorDataIdx = " << descriptorDataIdx << endl;
+ 
+    // draw cells
+    for (int celly=0; celly<cells_in_y_dir; celly++)
+    {
+        for (int cellx=0; cellx<cells_in_x_dir; cellx++)
+        {
+            int drawX = cellx * cellSize.width;
+            int drawY = celly * cellSize.height;
+ 
+            int mx = drawX + cellSize.width/2;
+            int my = drawY + cellSize.height/2;
+ 
+            rectangle(out,
+                      Point(drawX*scaleFactor,drawY*scaleFactor),
+                      Point((drawX+cellSize.width)*scaleFactor,
+                      (drawY+cellSize.height)*scaleFactor),
+                      CV_RGB(100,100,100),
+                      1);
+ 
+            // draw in each cell all 9 gradient strengths
+            for (int bin=0; bin<gradientBinSize; bin++)
+            {
+                float currentGradStrength = gradientStrengths[celly][cellx][bin];
+ 
+                // no line to draw?
+                if (currentGradStrength==0)
+                    continue;
+ 
+                float currRad = bin * radRangeForOneBin + radRangeForOneBin/2;
+ 
+                float dirVecX = cos( currRad );
+                float dirVecY = sin( currRad );
+                float maxVecLen = cellSize.width/2;
+                float scale = viz_factor; // just a outalization scale,
+                                          // to see the lines better
+ 
+                // compute line coordinates
+                float x1 = mx - dirVecX * currentGradStrength * maxVecLen * scale;
+                float y1 = my - dirVecY * currentGradStrength * maxVecLen * scale;
+                float x2 = mx + dirVecX * currentGradStrength * maxVecLen * scale;
+                float y2 = my + dirVecY * currentGradStrength * maxVecLen * scale;
+ 
+                // draw gradient outalization
+                line(out,
+                     Point(x1*scaleFactor,y1*scaleFactor),
+                     Point(x2*scaleFactor,y2*scaleFactor),
+                     CV_RGB(0,0,255),
+                     1);
+ 
+            } // for (all bins)
+ 
+        } // for (cellx)
+    } // for (celly)
+ 
+ 
+    // don't forget to free memory allocated by helper data structures!
+    for (int y=0; y<cells_in_y_dir; y++)
+    {
+      for (int x=0; x<cells_in_x_dir; x++)
+      {
+           delete[] gradientStrengths[y][x];            
+      }
+      delete[] gradientStrengths[y];
+      delete[] cellUpdateCounter[y];
+    }
+    delete[] gradientStrengths;
+    delete[] cellUpdateCounter;
+ 
+    return out;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

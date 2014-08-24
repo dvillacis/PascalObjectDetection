@@ -1,7 +1,6 @@
 #include "FileIO.h"
 
-void
-saveToFile(const std::string &filename, const SupportVectorMachine &svm, const FeatureExtractor *feat)
+void saveToFile(const std::string &filename, const SupportVectorMachine &svm, const FeatureExtractor *feat)
 {
     FILE *f = fopen(filename.c_str(), "wb");
     if(f == NULL) {
@@ -14,8 +13,7 @@ saveToFile(const std::string &filename, const SupportVectorMachine &svm, const F
     fclose(f);
 }
 
-void
-loadFromFile(const std::string &filename, SupportVectorMachine &svm, FeatureExtractor **feat)
+void loadFromFile(const std::string &filename, SupportVectorMachine &svm, FeatureExtractor **feat)
 {
     FILE *f = fopen(filename.c_str(), "rb");
     if(f == NULL) {

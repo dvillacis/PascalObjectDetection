@@ -31,7 +31,7 @@ public:
     //void operator()(const Mat &image, Feature &feat) const;
 
     // Extract feature vector for image image. Decending classes must implement this method
-    virtual void operator()(const Mat &image, Feature &feat, bool isFlipped) const = 0;
+    virtual void operator()(Mat &image, Feature &feat) const = 0;
 
     // Extracts descriptor for each image in the database, stores result in FeatureCollection,
     // this is used for training the support vector machine.
@@ -73,7 +73,7 @@ private:
     // degrees is considered the same as 10 degrees)
     int _cellSize;                        // Support size of a cell, in pixels
 
-    HOGDescriptor _hog;
+    //HOGDescriptor _hog;
 
 public:
     std::string getFeatureType() const { return "hog"; };
@@ -85,9 +85,9 @@ public:
     //! Constructor
     HOGFeatureExtractor(const ParametersMap &params = ParametersMap());
 
-    void operator()(const Mat &image, Feature &feat, bool isFlipped) const;
+    void operator()(Mat &image, Feature &feat) const;
 
-    Mat render(const Feature &f) const;
+    Mat renderHOG(Mat& img, Mat& out, vector<float>& descriptorValues, Size winSize, Size cellSize, int scaleFactor, double viz_factor) const;
 
     double scaleFactor() const { return 1.0 / double(_cellSize); }
 };

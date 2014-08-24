@@ -236,6 +236,30 @@ float SupportVectorMachine::predict(const Feature &feature) const
     return decisionValue;
 }
 
+float SupportVectorMachine::predict(const vector<float> &feature) const
+{
+    int dim = feature.size();
+
+    svm_node *svmNode = new svm_node[dim + 1];
+
+    svm_node *svmNodeIter = svmNode;
+
+    for(int i = 0; i < dim; i++) {
+        float data = feature[i];
+        svmNodeIter->index = i;
+        svmNodeIter->value = data;
+        svmNodeIter++;
+    }
+    svmNodeIter->index = -1;
+
+    double decisionValue;
+    float label = svm_predict_values(_model, svmNode, &decisionValue);
+
+    delete [] svmNode;
+
+    return decisionValue;
+}
+
 float SupportVectorMachine::predictLabel(const Feature &feature) const
 {
     cv::Size shape = feature.size();
@@ -256,6 +280,29 @@ float SupportVectorMachine::predictLabel(const Feature &feature) const
     double decisionValue;
     cout << feature.size() << endl;
     float label = svm_predict_values(_model, svmNode, &decisionValue);
+    delete [] svmNode;
+
+    return label;
+}
+
+float SupportVectorMachine::predictLabel(const vector<float> &feature, double& decisionValue) const
+{
+    int dim = feature.size();
+
+    svm_node *svmNode = new svm_node[dim + 1];
+
+    svm_node *svmNodeIter = svmNode;
+
+    for(int i = 0; i < dim; i++) {
+        float data = feature[i];
+        svmNodeIter->index = i;
+        svmNodeIter->value = data;
+        svmNodeIter++;
+    }
+    svmNodeIter->index = -1;
+
+    float label = svm_predict_values(_model, svmNode, &decisionValue);
+
     delete [] svmNode;
 
     return label;

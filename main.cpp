@@ -106,6 +106,8 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
 
 int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
 {
+    // TODO: Fix the parameters input
+
     if(args.size() < 4 || args.size() > 6) {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
@@ -157,6 +159,8 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
 
 int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, string> &opts)
 {
+    // TODO: Fix parameter input
+
     // Detection over multiple scales with non maxima suppression
     if(args.size() < 5) {
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
@@ -207,9 +211,8 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
     loadFromFile(svmModelFName, svm, &featExtractor);
 
     LOG(INFO) << "Initializing object detector";
-    //vector<float> svmDetector = svm.getDetector();
-    ObjectDetector obdet;
-    obdet.setDetector(HOGDescriptor::getDefaultPeopleDetector());
+    ObjectDetector obdet(svm);
+    //obdet.setDetector(svm.getDetector());
 
     vector<vector<Detection> > dets(db.getSize());
 
@@ -277,6 +280,8 @@ int mainPCA(const vector<string> &args, const map<string, string> &opts)
         throw "ERROR: Incorrect number of arguments. Run command with flag -h for help.";
     }
 
+    double t = (double)getTickCount();
+
     LOG(INFO) << "Performing a PCA analysis on the images database";
 
     string dbFName = args[2];
@@ -305,12 +310,15 @@ int mainPCA(const vector<string> &args, const map<string, string> &opts)
     (*featExtractor)(db, features);
 
     LOG(INFO) << "Performing PCA on the obtained HOG features";
-    Mat data;
+    int num_samples = features.size();
+    int num_features = features[0].rows;
+    Mat data(num_features,num_samples,CV_32FC1,Scalar(0));
     PrincipalComponentAnalysis pca;
     pca.pre_process(features,data);
     pca.compute(data,db);
     pca.savePCAFile(pcaFName);
 
+    LOG(INFO) << "PCA completed in " << t/getTickFrequency() << " seconds.";
 
     return EXIT_SUCCESS;
 }
@@ -326,14 +334,14 @@ int mainVIDEO(const vector<string> &args, const map<string, string> &opts)
 
     LOG(INFO) << "Initializing object detector";
     //vector<float> svmDetector = svm.getDetector();
-    ObjectDetector obdet;
-    obdet.setDetector(svm.getDetector());
+    ObjectDetector obdet(svm);
+    //obdet.setDetector(svm.getDetector());
 
     VideoCapture capture(0);
     if(!capture.isOpened())
         throw "Couldnt open the camera";
-    capture.set(CV_CAP_PROP_FRAME_WIDTH, 156);
-    capture.set(CV_CAP_PROP_FRAME_HEIGHT, 156);
+    capture.set(CV_CAP_PROP_FRAME_WIDTH, 256);
+    capture.set(CV_CAP_PROP_FRAME_HEIGHT, 256);
     string windowName = "Live Feed Detection";
     for(;;)
     {

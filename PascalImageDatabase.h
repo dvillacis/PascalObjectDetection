@@ -30,7 +30,7 @@ private:
     // centered and of the same size in all images)
     vector<cv::Rect> _rois;
 
-    void getROI(string imageName, vector<cv::Rect>& rois, vector<float>& roiLabels);
+    bool getROI(string imageName, vector<cv::Rect>& rois, vector<float>& roiLabels);
 
 
 public:

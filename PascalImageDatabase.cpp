@@ -34,7 +34,7 @@ PascalImageDatabase::PascalImageDatabase(const vector<float> &labels, const vect
     }
 }
 
-void PascalImageDatabase::getROI(string imageName, vector<Rect>& rois, vector<float>& roiLabels)
+bool PascalImageDatabase::getROI(string imageName, vector<Rect>& rois, vector<float>& roiLabels)
 {
     vector<string> parts;
     boost::split(parts,imageName,boost::is_any_of("/."),boost::token_compress_on);
@@ -45,18 +45,75 @@ void PascalImageDatabase::getROI(string imageName, vector<Rect>& rois, vector<fl
     pascal_annotation annotation;
     annotation.load(annotationsFilename);
 
+    //Mat img = imread(imageName,1);
+    //cout << "Obtaining annotations from: " << imageName << endl;
+
     for(int i = 0; i < annotation.objects.size(); ++i){
-        Rect r(annotation.objects[i].bndbox.xmin,
-            annotation.objects[i].bndbox.ymin,
-            annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin,
-            annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin);
-        rois.push_back(r);
+        // if(annotation.objects[i].truncated == 1)
+        //     return false;
+        //cout << "Obtaining annotations for: " << annotation.objects[i].name << endl;
 
         int label = -1;
         if(boost::iequals(annotation.objects[i].name,_category))
             label = 1;
+
+        Rect originalR;
+
+        originalR.x = annotation.objects[i].bndbox.xmin;
+        originalR.y = annotation.objects[i].bndbox.ymin;
+        originalR.width = annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin;
+        originalR.height = annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin;
+        // rectangle(img,originalR,Scalar(255,0,0),2);
+        // cout << originalR << endl;
+
+        Rect r;
+
+        r.x = annotation.objects[i].bndbox.xmin;
+        r.y = annotation.objects[i].bndbox.ymin;
+        r.width = annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin;
+        r.height = annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin;
+
+        // if(label == 1){
+        //     int deltax = annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin;
+        //     int deltay = annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin;
+        //     if(deltax <= 64 || deltay <= 128){
+
+        //         r.x = annotation.objects[i].bndbox.xmin;
+        //         r.y = annotation.objects[i].bndbox.ymin;
+        //         r.width = annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin;
+        //         r.height = annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin;
+        //         //cout << "Small image " << annotation.objects[i].bndbox.xmax << "-" << annotation.objects[i].bndbox.ymax << endl;
+        //     }
+        //     else
+        //     {
+
+        //         Point center(((annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin)/2)+annotation.objects[i].bndbox.xmin,
+        //                         ((annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin)/2)+annotation.objects[i].bndbox.ymin);
+        //         //cout << "Extracting the center: "<< center << endl;
+        //         r.x = center.x-32;
+        //         r.y = center.y-64;
+        //         r.width = 64;
+        //         r.height = 128;
+        //     }
+        //     //rectangle(img,r,Scalar(0,0,0),2);
+        // }
+        // else
+        // {
+        //     r.x = annotation.objects[i].bndbox.xmin;
+        //     r.y = annotation.objects[i].bndbox.ymin;
+        //     r.width = annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin;
+        //     r.height = annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin;
+        // }
+            
+        
+        // imshow("GT",img);
+        // waitKey(0);
+
+        rois.push_back(r);
         roiLabels.push_back(label);
+        //cout << "Clean exit " << r << endl;
     }
+    return true;
 }
 
 void PascalImageDatabase::load(const char *dbFilename)
@@ -87,80 +144,68 @@ void PascalImageDatabase::load(const char *dbFilename)
 
             vector<Rect> roi;
             vector<float> roiLabels;
-            getROI(imageName, roi, roiLabels);
-
-            Mat img = imread(imageName, CV_LOAD_IMAGE_GRAYSCALE);
-
-            if(label > 0)
+            if(getROI(imageName, roi, roiLabels) == true)
             {
-                for(int i = 0; i < roi.size(); ++i) 
-                {
-                    Mat roiImg = img(roi[i]);
-                    _filenames.push_back(imageName);
-                    _labels.push_back(roiLabels[i]);
-                    _rois.push_back(roi[i]);
+                Mat img = imread(imageName, CV_LOAD_IMAGE_GRAYSCALE);
 
-                    if(roiLabels[i] > 0)
+                if(label > 0)
+                {
+                    for(int i = 0; i < roi.size(); ++i) 
                     {
-                        // Add a flipped image
+                        //Mat roiImg = img(roi[i]);
                         _filenames.push_back(imageName);
                         _labels.push_back(roiLabels[i]);
                         _rois.push_back(roi[i]);
-                        _flipped.push_back(true);
+                        _flipped.push_back(false);
 
-                        _positivesCount++;
-                    }  
+                        if(roiLabels[i] > 0)
+                        {
+                            // Add a flipped image
+                            _filenames.push_back(imageName);
+                            _labels.push_back(roiLabels[i]);
+                            _rois.push_back(roi[i]);
+                            _flipped.push_back(true);
 
-                    // if(roiImg.cols <= 64 || roiImg.rows <= 128){
-                    //     _rois.push_back(roi[i]);
-                    // }
-                    // else
-                    // {
-                    //     int x = rand() % (roiImg.cols-64);
-                    //     int y = rand() % (roiImg.rows-128);
-                    //     Rect r(x,y,64,128);
-                    //     _rois.push_back(r);
-                    //     _flipped.push_back(false);
+                            _positivesCount++;
+                        }  
 
-                         
-                    // }
-
-                    if(roiLabels[i] < 0) _negativesCount++;
-                    else if(roiLabels[i] > 0) _positivesCount++;
+                        if(roiLabels[i] < 0) _negativesCount++;
+                        else if(roiLabels[i] > 0) _positivesCount++;
+                    }
                 }
-            }
-            if(label < 0)
-            {
-                //Get the random negatives
-                for(int i = 0; i <= 10; i++)
+                if(label < 0)
                 {
-                    _filenames.push_back(imageName);
-                    _labels.push_back(-1);
-
-                    if(img.cols <= 64 || img.rows <= 128){
-                        _rois.push_back(roi[i]);
-                        _flipped.push_back(false);
-                        _negativesCount++;
-                        break;
-                    }
-                    else
+                    //Get the random negatives
+                    for(int i = 0; i < 10; i++)
                     {
-                        int x = rand() % (img.cols-64);
-                        int y = rand() % (img.rows-128);
-                        Rect r(x,y,64,128);
+                        _filenames.push_back(imageName);
+                        _labels.push_back(-1);
 
-                        _rois.push_back(r);
-                        _flipped.push_back(false);
+                        if(img.cols <= 64 || img.rows <= 128){
+                            _rois.push_back(roi[i]);
+                            _flipped.push_back(false);
+                            _negativesCount++;
+                            i = 10;
+                        }
+                        else
+                        {
+                            int x = rand() % (img.cols-64);
+                            int y = rand() % (img.rows-128);
+                            Rect r(x,y,64,128);
 
-                        _negativesCount++;
+                            _rois.push_back(r);
+                            _flipped.push_back(false);
 
+                            _negativesCount++;
+
+                        }
+                        
                     }
-                    
                 }
-            }
 
-            img.release();
-            //i++;
+                img.release();
+                //i++;
+            }
         }
     }
     f.close();

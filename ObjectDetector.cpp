@@ -1,5 +1,5 @@
 #include <boost/foreach.hpp>
-#include <modules/objdetect/src/hog.cpp>
+//#include <modules/objdetect/src/hog.cpp>
 #include "ObjectDetector.h"
 
 #define WIN_SIZE_NMS_KEY   "nms_win_size"
@@ -11,184 +11,110 @@ using namespace std;
 
 // Object Detector class
 
-ObjectDetector::ObjectDetector()
+ObjectDetector::ObjectDetector(const SupportVectorMachine& svm):
+    _svm(svm)
 {
-    HOGDescriptor::HOGDescriptor();
+    _svmDetector = svm.getDetector();
 }
 
 ObjectDetector::~ObjectDetector()
 {
-    HOGDescriptor::~HOGDescriptor();
+    //HOGDescriptor::~HOGDescriptor();
 }
 
 void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
 {
+    //TODO: Put the hit theshold to be configurable from the outside
+    _winSize = Size(64,128);
+    _blockSize = Size(16,16);
+    _blockStride = Size(8,8);
+    _cellSize = Size(8,8);
+    _nbins = 9;
+
+    HOGDescriptor hog(_winSize,_blockSize,_blockStride,_cellSize,_nbins);
+    hog.setSVMDetector(_svmDetector);
+
     vector<Point> hits;
     vector<Point> locations;
     vector<double> weights;
 
-    //detectLinearKernel(img,hits,weights,2.0,Size(8,8),Size(32,32),locations);
-    HOGDescriptor::detect(img,hits,weights,0.0,Size(8,8),Size(32,32),locations);
+    // Mat grayImg;
+    // cv::cvtColor(img, grayImg, CV_RGB2GRAY);
+    // Mat testImg;
+    // blur(img, testImg, Size(3,3));
+    // Canny(testImg, testImg, 2, 2*3, 3);
+
+    // Detecting on first level of the pyramid
+    // Mat imgDown;
+    // pyrDown(img,imgDown,Size(img.cols/2,img.rows/2));
+    detect(img,hits,weights,1,Size(16,16),Size(0,0),locations, &hog);
+    //HOGDescriptor::detect(img,hits,weights,0.0,Size(8,8),Size(32,32),locations);
     for(int i = 0; i < hits.size(); i++)
     {
-        cout << hits[i] << endl;
         Rect r(hits[i],Size(64,128));
+        //Rect r(Point(hits[i].x*(2),hits[i].y*(2)),Size(64*(2),128*(2)));
         found.push_back(r);
+        cout << r << " score: " << weights[i] << endl;
     }
+
+    // Detecting on one scale down
+    // int num_levels = 2;
+    // Mat imgDown = img;
+    // for(int i = 1; i <= num_levels; ++i){
+        // cout << i << endl;
+    // double scale = 1;
+
+    // Mat imgDown;
+    // int i = 1;
+    // hits.clear();
+    // locations.clear();
+    // weights.clear();
+    // pyrDown(img,imgDown,Size(img.cols/scale,img.rows/scale));
+    // detectLinearKernel(imgDown,hits,weights,4,Size(8,8),Size(32,32),locations);
+    // for(int j = 0; j < hits.size(); j++)
+    // {
+    //     Rect r(Point(hits[j].x*(scale*i),hits[j].y*(scale*i)),Size(64*(scale*i),128*(scale*i)));
+    //     found.push_back(r);
+    //     cout << r << " score: " << weights[j] << endl;
+    // }
+
+    // Mat imgUp;
+    // hits.clear();
+    // locations.clear();
+    // weights.clear();
+    // pyrUp(img,imgUp,Size(img.cols*scale,img.rows*scale));
+    // detectLinearKernel(imgUp,hits,weights,4,Size(8,8),Size(32,32),locations);
+    // for(int j = 0; j < hits.size(); j++)
+    // {
+    //     Rect r(Point(hits[j].x/(scale*i),hits[j].y/(scale*i)),Size(64/(scale*i),128/(scale*i)));
+    //     found.push_back(r);
+    //     cout << r << " score: " << weights[j] << endl;
+    // }
+    //}
+
+
     //HOGDescriptor::detectMultiScale(img,found, 0, Size(8,8), Size(32,32), 1.05, 3,true);
 }
 
-void ObjectDetector::detectLinearKernel(const Mat& img, vector<Point>& hits, vector<double>& weights, 
-        double hitThreshold, Size winStride, Size padding, const vector<Point>& locations)
+void ObjectDetector::detect(const Mat& img, vector<Point>& hits, vector<double>& weights, 
+        double hitThreshold, Size winStride, Size padding, const vector<Point>& locations, HOGDescriptor* hog)
 {
-    hits.clear();
-    if(svmDetector.empty())
-        throw "No SVM Detector defined";
-
-    Size cacheStride(gcd(winStride.width, blockStride.width),gcd(winStride.height,blockStride.height));
-    size_t nwindows = locations.size();
-    padding.width = (int)alignSize(std::max(padding.width, 0), cacheStride.width);
-    padding.height = (int)alignSize(std::max(padding.height, 0), cacheStride.height);
-    Size paddedImgSize(img.cols + padding.width*2, img.rows + padding.height*2);
-
-    HOGCache cache(this, img, padding, padding, nwindows == 0, cacheStride);
-
-    if( !nwindows )
-        nwindows = cache.windowsInImage(paddedImgSize, winStride).area();
-
-    const HOGCache::BlockData* blockData = &cache.blockData[0];
-
-    int nblocks = cache.nblocks.area();
-    int blockHistogramSize = cache.blockHistogramSize;
-    size_t dsize = getDescriptorSize();
-
-    double rho = svmDetector.size() > dsize ? svmDetector[dsize] : 0;
-    vector<float> blockHist(blockHistogramSize);
-
-    for( size_t i = 0; i < nwindows; i++ )
+    for(int i = 0; i < img.cols-_winSize.width; i=i+winStride.width)
     {
-        Point pt0;
-        if( !locations.empty() )
+        for(int j = 0; j < img.rows-_winSize.height; j=j+winStride.height)
         {
-            pt0 = locations[i];
-            if( pt0.x < -padding.width || pt0.x > img.cols + padding.width - winSize.width ||
-                pt0.y < -padding.height || pt0.y > img.rows + padding.height - winSize.height )
-                continue;
-        }
-        else
-        {
-            pt0 = cache.getWindow(paddedImgSize, winStride, (int)i).tl() - Point(padding);
-            CV_Assert(pt0.x % cacheStride.width == 0 && pt0.y % cacheStride.height == 0);
-        }
-        double s = rho;
-        const float* svmVec = &svmDetector[0];
-        int j, k;
-        for( j = 0; j < nblocks; j++, svmVec += blockHistogramSize )
-        {
-            const HOGCache::BlockData& bj = blockData[j];
-            Point pt = pt0 + bj.imgOffset;
-            const float* vec = cache.getBlock(pt, &blockHist[0]);
-            for( k = 0; k <= blockHistogramSize - 4; k += 4 )
-                s += vec[k]*svmVec[k] + vec[k+1]*svmVec[k+1] + vec[k+2]*svmVec[k+2] + vec[k+3]*svmVec[k+3];
-            for( ; k < blockHistogramSize; k++ )
-                s += vec[k]*svmVec[k];
-        }
-        if( s >= hitThreshold )
-        {
-            hits.push_back(pt0);
-            weights.push_back(s);
+            Rect r(Point(i,j),_winSize);
+            Mat patch = img(r);
+            vector<float> patchWeights;
+            hog->compute(patch, patchWeights, Size(8,8), Size(0,0));
+            double score;
+            float predictedLabel = _svm.predictLabel(patchWeights,score);
+            if(predictedLabel > 0)
+            {
+                hits.push_back(Point(i,j));
+                weights.push_back(score);
+            }
         }
     }
     
 }
-
-void ObjectDetector::detectRBFKernel(const Mat& img, vector<Point>& hits, vector<double>& weights, 
-        double hitThreshold, Size winStride, Size padding, const vector<Point>& locations)
-{
-    hits.clear();
-    if(svmDetector.empty())
-        throw "No SVM Detector defined";
-
-    Size cacheStride(gcd(winStride.width, blockStride.width),gcd(winStride.height,blockStride.height));
-    size_t nwindows = locations.size();
-    padding.width = (int)alignSize(std::max(padding.width, 0), cacheStride.width);
-    padding.height = (int)alignSize(std::max(padding.height, 0), cacheStride.height);
-    Size paddedImgSize(img.cols + padding.width*2, img.rows + padding.height*2);
-
-    HOGCache cache(this, img, padding, padding, nwindows == 0, cacheStride);
-
-    if( !nwindows )
-        nwindows = cache.windowsInImage(paddedImgSize, winStride).area();
-
-    const HOGCache::BlockData* blockData = &cache.blockData[0];
-
-    int nblocks = cache.nblocks.area();
-    int blockHistogramSize = cache.blockHistogramSize;
-    size_t dsize = getDescriptorSize();
-
-    double rho = svmDetector.size() > dsize ? svmDetector[dsize] : 0;
-    vector<float> blockHist(blockHistogramSize);
-
-    for( size_t i = 0; i < nwindows; i++ )
-    {
-        Point pt0;
-        if( !locations.empty() )
-        {
-            pt0 = locations[i];
-            if( pt0.x < -padding.width || pt0.x > img.cols + padding.width - winSize.width ||
-                pt0.y < -padding.height || pt0.y > img.rows + padding.height - winSize.height )
-                continue;
-        }
-        else
-        {
-            pt0 = cache.getWindow(paddedImgSize, winStride, (int)i).tl() - Point(padding);
-            CV_Assert(pt0.x % cacheStride.width == 0 && pt0.y % cacheStride.height == 0);
-        }
-        double s = rho;
-        const float* svmVec = &svmDetector[0];
-        int j, k;
-        for( j = 0; j < nblocks; j++, svmVec += blockHistogramSize )
-        {
-            const HOGCache::BlockData& bj = blockData[j];
-            Point pt = pt0 + bj.imgOffset;
-            const float* vec = cache.getBlock(pt, &blockHist[0]);
-            for( k = 0; k <= blockHistogramSize - 4; k += 4 )
-                s += vec[k]*svmVec[k] + vec[k+1]*svmVec[k+1] + vec[k+2]*svmVec[k+2] + vec[k+3]*svmVec[k+3];
-            for( ; k < blockHistogramSize; k++ )
-                s += vec[k]*svmVec[k];
-        }
-        if( s >= hitThreshold )
-        {
-            hits.push_back(pt0);
-            weights.push_back(s);
-        }
-    }
-    
-}
-
-void ObjectDetector::setDetector(vector<float> svmDetector)
-{
-    HOGDescriptor::setSVMDetector(svmDetector);
-    LOG(INFO) << "SVMDetector initialized";
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

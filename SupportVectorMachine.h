@@ -57,12 +57,25 @@ public:
     */ 
     float predict(const Feature &feature) const;
 
+    //! Predict the decision value of a feature
+    /*! 
+        Run classifier on feature, size of feature must match one used for model training.
+        \param feature HOG calculated features from an image
+    */ 
+    float predict(const vector<float> &feature) const;
+
     //! Predict the label of a feature
     /*! 
         Run classifier on feature, size of feature must match one used for model training.
         \param feature HOG calculated features from an image
     */
     float predictLabel(const Feature &feature) const;
+    //! Predict the label of a feature
+    /*! 
+        Run classifier on feature, size of feature must match one used for model training.
+        \param feature HOG calculated features from an image
+    */
+    float predictLabel(const vector<float> &feature, double& decisionValue) const;
 
     //! Gets a collection of predictions given a collection of features
     std::vector<float> predict(const FeatureCollection &fset) const;
