@@ -7,7 +7,7 @@
 
 using namespace cv;
 
-typedef Mat Feature;
+typedef std::vector<float> Feature;
 typedef std::vector<Feature> FeatureCollection;
 
 //! Feature Extraction Class

@@ -94,7 +94,7 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     SupportVectorMachine svm(svmParams);
     svm.train(db.getLabels(), features);
 
-    saveToFile(svmModelFName, svm, featExtractor);
+    saveToFile(svmModelFName, svm);
 
     delete featExtractor;
 
@@ -118,6 +118,8 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
     string svmModelFName = args[3];
     string prFName = (args.size() >= 5) ? args[4] : "";
     string predsFName = (args.size() >= 6) ? args[5] : "";
+    string predsFName_label = predsFName+"_target";
+    string predsFName_scores = predsFName+"_scores";
 
     string category;
     if(opts.count("-c") == 1) {
@@ -131,9 +133,9 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
     cout << db << endl;
 
     LOG(INFO) << "Loading SVM model and feature extractor from file";
-    SupportVectorMachine svm;
-    FeatureExtractor *featExtractor = NULL;
-    loadFromFile(svmModelFName, svm, &featExtractor);
+    SupportVectorMachine svm(svmModelFName);
+    FeatureExtractor *featExtractor = FeatureExtractor::create(FeatureExtractor::getDefaultParameters("hog"));
+    //loadFromFile(svmModelFName, svm);
 
     LOG(INFO) << "Extracting features";
     FeatureCollection features;
@@ -141,6 +143,7 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
 
     LOG(INFO) << "Predicting";
     vector<float> preds = svm.predict(features);
+    vector<float> predLabels = svm.predictLabel(features);
 
     LOG(INFO) << "Computing Precision Recall Curve";
     PrecisionRecall pr(db.getLabels(), preds);
@@ -148,8 +151,12 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
 
     if(prFName.size() != 0) pr.save(prFName.c_str());
     if(predsFName.size() != 0) {
-        PascalImageDatabase predsDb(preds, db.getFilenames());
+        PascalImageDatabase predsDb(predLabels, db.getFilenames());
         predsDb.save(predsFName.c_str());
+        PascalImageDatabase targetDb(db.getLabels(), db.getFilenames());
+        targetDb.save(predsFName_label.c_str());
+        PascalImageDatabase scoresDb(preds, db.getFilenames());
+        scoresDb.save(predsFName_scores.c_str());
     }
 
     LOG(INFO) << "Cross Validation completed in " << t/getTickFrequency() << " seconds.";
@@ -207,8 +214,8 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
 
     LOG(INFO) << "Loading SVM model and features extractor from file";
     SupportVectorMachine svm;
-    FeatureExtractor *featExtractor = NULL;
-    loadFromFile(svmModelFName, svm, &featExtractor);
+    HOGFeatureExtractor *featExtractor = new HOGFeatureExtractor();
+    loadFromFile(svmModelFName, svm);
 
     LOG(INFO) << "Initializing object detector";
     ObjectDetector obdet(svm);
@@ -311,7 +318,7 @@ int mainPCA(const vector<string> &args, const map<string, string> &opts)
 
     LOG(INFO) << "Performing PCA on the obtained HOG features";
     int num_samples = features.size();
-    int num_features = features[0].rows;
+    int num_features = features[0].size();
     Mat data(num_features,num_samples,CV_32FC1,Scalar(0));
     PrincipalComponentAnalysis pca;
     pca.pre_process(features,data);
@@ -329,8 +336,8 @@ int mainVIDEO(const vector<string> &args, const map<string, string> &opts)
 
     LOG(INFO) << "Loading SVM model and features extractor from file";
     SupportVectorMachine svm;
-    FeatureExtractor *featExtractor = NULL;
-    loadFromFile(svmModelFName, svm, &featExtractor);
+    HOGFeatureExtractor *featExtractor = new HOGFeatureExtractor();
+    loadFromFile(svmModelFName, svm);
 
     LOG(INFO) << "Initializing object detector";
     //vector<float> svmDetector = svm.getDetector();

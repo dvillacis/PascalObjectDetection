@@ -71,6 +71,7 @@ SupportVectorMachine::SupportVectorMachine(const std::string &modelFName):
     _model(NULL),
     _data(NULL)
 {
+    LOG(INFO) << "Loading svm model: " << modelFName;
     load(modelFName);
 }
 
@@ -147,8 +148,7 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
 
     // Figure out size and number of feature vectors
     int nVecs = labels.size();
-    cv::Size shape = fset[0].size();
-    int dim = shape.width * shape.height;
+    int dim = fset[0].size();
 
     // Allocate memory
     svm_problem problem;
@@ -189,7 +189,7 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
         for(int i = 0; i < dim+1; i++){
             if(i != dim){
                 _data[k*(dim+1)+i].index = i;
-                _data[k*(dim+1)+i].value = currentFeature.at<float>(i,0);
+                _data[k*(dim+1)+i].value = currentFeature[i];
             }
             else{
                 // Set index for the last svm_node to -1 to indicate the feature has ended
@@ -213,17 +213,15 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
 
 float SupportVectorMachine::predict(const Feature &feature) const
 {
-    cv::Size shape = feature.size();
-    int dim = shape.width * shape.height;
+    int dim = feature.size();
 
     svm_node *svmNode = new svm_node[dim + 1];
 
     svm_node *svmNodeIter = svmNode;
 
     for(int i = 0; i < dim; i++) {
-        float data = feature.at<float>(i,0);
         svmNodeIter->index = i;
-        svmNodeIter->value = data;
+        svmNodeIter->value = feature[i];
         svmNodeIter++;
     }
     svmNodeIter->index = -1;
@@ -236,7 +234,31 @@ float SupportVectorMachine::predict(const Feature &feature) const
     return decisionValue;
 }
 
-float SupportVectorMachine::predict(const vector<float> &feature) const
+// float SupportVectorMachine::predict(const vector<float> &feature) const
+// {
+//     int dim = feature.size();
+
+//     svm_node *svmNode = new svm_node[dim + 1];
+
+//     svm_node *svmNodeIter = svmNode;
+
+//     for(int i = 0; i < dim; i++) {
+//         float data = feature[i];
+//         svmNodeIter->index = i;
+//         svmNodeIter->value = data;
+//         svmNodeIter++;
+//     }
+//     svmNodeIter->index = -1;
+
+//     double decisionValue;
+//     float label = svm_predict_values(_model, svmNode, &decisionValue);
+
+//     delete [] svmNode;
+
+//     return decisionValue;
+// }
+
+float SupportVectorMachine::predictLabel(const Feature &feature) const
 {
     int dim = feature.size();
 
@@ -245,34 +267,8 @@ float SupportVectorMachine::predict(const vector<float> &feature) const
     svm_node *svmNodeIter = svmNode;
 
     for(int i = 0; i < dim; i++) {
-        float data = feature[i];
         svmNodeIter->index = i;
-        svmNodeIter->value = data;
-        svmNodeIter++;
-    }
-    svmNodeIter->index = -1;
-
-    double decisionValue;
-    float label = svm_predict_values(_model, svmNode, &decisionValue);
-
-    delete [] svmNode;
-
-    return decisionValue;
-}
-
-float SupportVectorMachine::predictLabel(const Feature &feature) const
-{
-    cv::Size shape = feature.size();
-    int dim = shape.width * shape.height;
-
-    svm_node *svmNode = new svm_node[dim + 1];
-
-    svm_node *svmNodeIter = svmNode;
-
-    for(int i = 0; i < dim; i++) {
-        float data = feature.at<float>(i,0);
-        svmNodeIter->index = i;
-        svmNodeIter->value = data;
+        svmNodeIter->value = feature[i];
         svmNodeIter++;
     }
     svmNodeIter->index = -1;
@@ -285,7 +281,7 @@ float SupportVectorMachine::predictLabel(const Feature &feature) const
     return label;
 }
 
-float SupportVectorMachine::predictLabel(const vector<float> &feature, double& decisionValue) const
+float SupportVectorMachine::predictLabel(const Feature &feature, double& decisionValue) const
 {
     int dim = feature.size();
 
@@ -294,9 +290,8 @@ float SupportVectorMachine::predictLabel(const vector<float> &feature, double& d
     svm_node *svmNodeIter = svmNode;
 
     for(int i = 0; i < dim; i++) {
-        float data = feature[i];
         svmNodeIter->index = i;
-        svmNodeIter->value = data;
+        svmNodeIter->value = feature[i];
         svmNodeIter++;
     }
     svmNodeIter->index = -1;
@@ -331,6 +326,29 @@ std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset) 
     return preds;
 }
 
+std::vector<float> SupportVectorMachine::predictLabel(const FeatureCollection &fset) const
+{
+    int n = fset.size();
+    std::vector<float> preds(n);
+    for(int i = 0; i < n; i++) {
+        float percent;
+        printf("\033[s");
+        // Print progress string
+        if((i+1)%1000 == 0 || (i+1) == n)
+        {
+            percent = ((i+1)*100)/n;
+            cout << percent << "% ... ";
+            fflush(stdout);
+            printf("\033[u");
+        }
+
+        double decisionValue;
+        preds[i] = predictLabel(fset[i], decisionValue);
+    }
+
+    return preds;
+}
+
 std::vector<float> SupportVectorMachine::getDetector() const
 {
     if(_model == NULL)
@@ -341,7 +359,7 @@ std::vector<float> SupportVectorMachine::getDetector() const
     const double * const * sv_coef = _model->sv_coef;
     const svm_node * const *SV = _model->SV;
     int l = _model->l;
-    _model->label;
+    //_model->label;
 
     const svm_node* p_tmp = SV[0];
     int len = 0;
@@ -405,19 +423,20 @@ double SupportVectorMachine::getBiasTerm() const
 
 void SupportVectorMachine::load(const std::string &filename)
 {
-    FILE *f = fopen(filename.c_str(), "rb");
-    if(f == NULL) throw "Failed to open file " + filename + " for reading";
-    this->load(f);
+    _deinit();
+    // FILE *f = fopen(filename.c_str(), "rb");
+    // if(f == NULL) throw "Failed to open file " + filename + " for reading";
+    _model = svm_load_model(filename.c_str());
 }
 
 void SupportVectorMachine::load(FILE *fp)
 {
-    _deinit();
+    // _deinit();
 
-    _model = svm_load_model_fp(fp);
-    if(_model == NULL) {
-        throw "Failed to load SVM model";
-    }
+    // _model = svm_load_model_fp(fp);
+    // if(_model == NULL) {
+    //     throw "Failed to load SVM model";
+    // }
 }
 
 void SupportVectorMachine::save(FILE *fp) const
@@ -444,8 +463,8 @@ void SupportVectorMachine::save(const std::string &filename) const
 
 void SupportVectorMachine::predictSlidingWindow(const Feature &feat, Mat &response) const
 {
-    response = Mat::zeros(feat.cols,feat.rows,CV_32FC2);
-    cout << feat.size() << endl;
+    // response = Mat::zeros(feat.cols,feat.rows,CV_32FC2);
+    // cout << feat.size() << endl;
     /******** BEGIN TODO ********/
     // Sliding window prediction.
     //
@@ -478,8 +497,8 @@ void SupportVectorMachine::predictSlidingWindow(const Feature &feat, Mat &respon
     // Useful functions:
     // Convolve, BandSelect, this->getWeights(), this->getBiasTerm()
 
-    double bias = this->getBiasTerm();
-    Mat convImg = Mat::zeros(feat.cols,feat.rows,CV_32FC2);
+    // double bias = this->getBiasTerm();
+    // Mat convImg = Mat::zeros(feat.cols,feat.rows,CV_32FC2);
 
     /******** END TODO ********/
 }

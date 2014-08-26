@@ -145,29 +145,18 @@ void HOGFeatureExtractor::operator()(Mat &img, Feature &feat) const
     // imshow("Training image",img);
     // waitKey(0);
 
-    vector<float> extractedFeatures;
-
     // Check for mismatching dimensions
     // if (grayImg.cols < _hog.winSize.width)
     //     resize(grayImg,grayImg,cv::Size(_hog.winSize.width,grayImg.rows));
     // if(grayImg.rows < _hog.winSize.height)
     //     resize(grayImg,grayImg,cv::Size(grayImg.cols,_hog.winSize.height));
 
-    hog.compute(img, extractedFeatures, Size(8,8), Size(0,0));
+    hog.compute(img, feat, Size(8,8), Size(0,0));
     
     // Mat test;
     // renderHOG(img, test, extractedFeatures, hog.winSize, hog.cellSize, 1, 1),
     // imshow("HOG",test);
     // waitKey(0);
-
-    feat = Mat::zeros(extractedFeatures.size(),1, CV_32FC1);
-
-    for(int i = 0; i < extractedFeatures.size(); i++)
-    {
-        feat.at<float>(i) = extractedFeatures[i];
-    }
-
-    extractedFeatures.clear();
     //grayImg.release();
 }
 

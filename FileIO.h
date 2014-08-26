@@ -6,8 +6,8 @@
 #include "Feature.h"
 #include "Detection.h"
 
-void saveToFile(const std::string &filename, const SupportVectorMachine &svm, const FeatureExtractor *feat);
-void loadFromFile(const std::string &filename, SupportVectorMachine &svm, FeatureExtractor **feat);
+void saveToFile(const std::string &filename, const SupportVectorMachine &svm);
+void loadFromFile(const std::string &filename, SupportVectorMachine &svm);
 
 void saveToFile(const std::string &filename, const std::vector<Detection> &dets);
 

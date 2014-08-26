@@ -1,29 +1,22 @@
 #include "FileIO.h"
 
-void saveToFile(const std::string &filename, const SupportVectorMachine &svm, const FeatureExtractor *feat)
+void saveToFile(const std::string &filename, const SupportVectorMachine &svm)
 {
     FILE *f = fopen(filename.c_str(), "wb");
     if(f == NULL) {
         throw "Could not open file " + filename + " for writing";
     }
 
-    FeatureExtractor::save(f, feat);
-
     svm.save(f);
     fclose(f);
 }
 
-void loadFromFile(const std::string &filename, SupportVectorMachine &svm, FeatureExtractor **feat)
+void loadFromFile(const std::string &filename, SupportVectorMachine &svm)
 {
     FILE *f = fopen(filename.c_str(), "rb");
     if(f == NULL) {
         throw "Could not open file " + filename + " for reading";
     }
-
-    char buff[100];
-
-    assert(*feat == NULL);
-    *feat = FeatureExtractor::load(f);
 
     svm.load(f);
 

@@ -62,7 +62,7 @@ public:
         Run classifier on feature, size of feature must match one used for model training.
         \param feature HOG calculated features from an image
     */ 
-    float predict(const vector<float> &feature) const;
+    //float predict(const vector<float> &feature) const;
 
     //! Predict the label of a feature
     /*! 
@@ -79,6 +79,7 @@ public:
 
     //! Gets a collection of predictions given a collection of features
     std::vector<float> predict(const FeatureCollection &fset) const;
+    std::vector<float> predictLabel(const FeatureCollection &fset) const;
 
     //! Get the primal form for the svm
     std::vector<float> getDetector() const;
