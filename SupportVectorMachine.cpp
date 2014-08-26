@@ -142,7 +142,7 @@ void SupportVectorMachine::printSVMParameters()
 
 void SupportVectorMachine::train(const std::vector<float> &labels, const FeatureCollection &fset)
 {
-    if(labels.size() != fset.size()) throw "Database size is different from feature set size!";
+    if(labels.size() != fset.size()) throw std::runtime_error("ERROR: Database size is different from feature set size!");
 
     printSVMParameters();
 
@@ -157,22 +157,6 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
     problem.x = new svm_node*[nVecs];
     if(_data) delete [] _data;
 
-    /******** BEGIN TODO ********/
-    // Copy the data used for training the SVM into the libsvm data structures "problem".
-    // Put the feature vectors in _data and labels in problem.y. Also, problem.x[k]
-    // should point to the address in _data where the k-th feature vector starts (i.e.,
-    // problem.x[k] = &_data[starting index of k-th feature])
-    //
-    // Hint:
-    // * Don't forget to set _data[].index to the corresponding dimension in
-    //   the original feature vector. You also need to set _data[].index to -1
-    //   right after the last element of each feature vector
-
-    // Vector containing all feature vectors. svm_node is a struct with
-    // two fields, index and value. Index entry indicates position
-    // in feature vector while value is the value in the original feature vector,
-    // each feature vector of size k takes up k+1 svm_node's in _data
-    // the last one being simply to indicate that the feature has ended by setting the index
     // entry to -1
     _data = new svm_node[nVecs * (dim + 1)];
 
@@ -352,7 +336,7 @@ std::vector<float> SupportVectorMachine::predictLabel(const FeatureCollection &f
 std::vector<float> SupportVectorMachine::getDetector() const
 {
     if(_model == NULL)
-        throw "Asking for SVM bias term but there is no model. Either load one from file or train one before.";
+        throw std::runtime_error("ERROR: Asking for SVM bias term but there is no model. Either load one from file or train one before.");
 
     std::vector<float> weights;
     
@@ -388,38 +372,9 @@ std::vector<float> SupportVectorMachine::getDetector() const
 double SupportVectorMachine::getBiasTerm() const
 {
     if(_model == NULL)
-        throw "Asking for SVM bias term but there is no model. Either load one from file or train one before.";
+        throw std::runtime_error("ERROR: Asking for SVM bias term but there is no model. Either load one from file or train one before.");
     return _model->rho[0];
 }
-
-// vector<float> SupportVectorMachine::getWeights() const
-// {
-//     if(_model == NULL)
-//         throw "Asking for SVM weights but there is no model. Either load one from file or train one before.";
-
-//     vector<float> weights;
-//     int nSVs = _model->l; // number of support vectors
-
-//     for(int s = 0; s < nSVs; s++) {
-//         double coeff = _model->sv_coef[0][s];
-//         svm_node *sv = _model->SV[s];
-
-//         if(s == 0)
-//         {
-//             weights.push_back(sv[0])
-//         }
-
-//         for(int y = 0, d = 0; y < _fVecShape.height; y++) {
-//             float *w = (float *) weightVec.PixelAddress(0, y, 0);
-//             for(int x = 0; x < _fVecShape.width; x++, d++, w++, sv++) {
-//                 assert(sv->index == d);
-//                 *w += sv->value * coeff;
-//             }
-//         }
-//     }
-
-//     return weightVec;
-// }
 
 void SupportVectorMachine::load(const std::string &filename)
 {
@@ -441,7 +396,7 @@ void SupportVectorMachine::load(FILE *fp)
 
 void SupportVectorMachine::save(FILE *fp) const
 {
-    if(_model == NULL) throw "No model to be saved";
+    if(_model == NULL) throw std::runtime_error("ERROR: No model to be saved");
 
     if(svm_save_model_fp(fp, _model) != 0) {
         throw "Error while trying to write model to file";
@@ -452,12 +407,12 @@ void SupportVectorMachine::save(const std::string &filename) const
 {
     FILE *fp = fopen(filename.c_str(), "wb");
     if(fp == NULL) {
-        throw "Could not open file " + filename + " for writing.";
+        throw std::runtime_error("ERROR: Could not open file " + filename + " for writing.");
     }
 
     save(fp);
     if (ferror(fp) != 0 || fclose(fp) != 0) {
-        throw "Error while closing file " + filename;
+        throw std::runtime_error("ERROR: Error while closing file " + filename);
     }
 }
 

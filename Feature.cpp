@@ -59,7 +59,7 @@ FeatureExtractor * FeatureExtractor::create(ParametersMap params)
     if(strcasecmp(featureType.c_str(), "hog") == 0) 
         return new HOGFeatureExtractor(params);
     else {
-        throw "Unknown feature type: " + featureType;
+        throw std::runtime_error("ERROR: Unknown feature type: " + featureType);
     }
 }
 
@@ -69,7 +69,7 @@ ParametersMap FeatureExtractor::getDefaultParameters(const std::string &featureT
     if(strcasecmp(featureType.c_str(), "hog"     ) == 0) 
         params = HOGFeatureExtractor::getDefaultParameters();
     else {
-        throw "Unknown feature type: " + featureType;
+        throw std::runtime_error("ERROR: Unknown feature type: " + featureType);
     }
 
     params[FEATURE_TYPE_KEY] = featureType;

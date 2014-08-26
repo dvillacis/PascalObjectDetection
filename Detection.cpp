@@ -19,41 +19,18 @@ double Detection::area() const
 
 double Detection::relativeOverlap(const Detection &other) const
 {
-    /******** BEGIN TODO ********/
-    // Compute the relative overlap between two detections. This
-    // is defined as the ratio
-    //
-    //                    AreaInter(r1, r2)
-    //                   ------------------
-    //                    AreaUnion(r1, r2)
-    //
-    // where AreaInter is the area of the intersection of the two
-    // rectangles r1 and r2, and AreaUnion is the area of the union
-    // of the two rectangles.
+    Rect intersection = rect & other.rect;
+    double intersectionArea = intersection.area();
+    double unionArea = this->area() + other.area() - intersectionArea;
 
-    double relOver = 0.0;
+    double relOver = intersectionArea/unionArea;
 
-printf("TODO: %s:%d\n", __FILE__, __LINE__); 
-
-    /******** END TODO ********/
     return relOver;
 }
 
 void Detection::draw(Mat &img) const
 {
     rectangle(img,rect,Scalar(255,0,0),2);
-    // static const Color red(255, 50, 50);
-    // // Bounding box
-    // drawHorizLine(img, x - width / 2.0, x + width / 2.0, y - height / 2.0, red);
-    // drawHorizLine(img, x - width / 2.0, x + width / 2.0, y + height / 2.0, red);
-
-    // drawVertLine(img, x - width / 2.0, y - height / 2.0, y + height / 2.0, red);
-    // drawVertLine(img, x + width / 2.0, y - height / 2.0, y + height / 2.0, red);
-
-    // // Central point
-    // const int crossSize = 3;
-    // drawHorizLine(img, x - crossSize, x + crossSize, y, red);
-    // drawVertLine(img, x, y - crossSize, y + crossSize, red);
 }
 
 void drawDetections(Mat &img, const vector<Detection> &dets)

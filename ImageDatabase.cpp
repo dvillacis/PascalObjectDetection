@@ -54,7 +54,7 @@ vector<Detection> ImageDatabase::getGroundTruth(string imageName)
                 annotation.objects[i].bndbox.xmax - annotation.objects[i].bndbox.xmin,
                 annotation.objects[i].bndbox.ymax - annotation.objects[i].bndbox.ymin);
 
-            Detection det(r,0);
+            Detection det(r,1);
             dets.push_back(det);
         }
     }
@@ -70,7 +70,7 @@ void ImageDatabase::load(const string &dbFilename)
 
     ifstream f(dbFilename.c_str());
     if(!f.is_open()) {
-        throw "Could not open file " + dbFilename + " for reading";
+        throw std::runtime_error("Could not open file " + dbFilename + " for reading");
     }
     else
     {
@@ -92,37 +92,13 @@ void ImageDatabase::load(const string &dbFilename)
                 else if(label > 0) _positivesCount++;
         }
     }
-
-    // char sig[200];
-    // f.read(sig, strlen(SIGNATURE));
-    // sig[strlen(SIGNATURE)] = '\0';
-    // if (strcmp(sig, SIGNATURE) != 0) {
-    //     throw "Bad signature for file, expecting \"%s\" but got \"%s\"", SIGNATURE, sig);
-    // }
-
-    // int nItems;
-    // f >> nItems;
-
-    // assert(nItems > 0);
-
-    // _filenames.resize(nItems);
-    // _detections.resize(nItems);
-    // for(int i = 0; i < nItems; i++) {
-    //     f >> _filenames[i];
-
-    //     int nDets = 0;
-    //     f >> nDets;
-
-    //     _detections[i].resize(nDets);
-    //     for (int j = 0; j < nDets; j++) f >> _detections[i][j];
-    // }
 }
 
 void ImageDatabase::save(const string &dbFilename)
 {
     ofstream f(dbFilename.c_str());
     if(!f.is_open()) {
-        throw "Could not open file " + dbFilename + " for writing";
+        throw std::runtime_error("Could not open file " + dbFilename + " for writing");
     }
 
     f << SIGNATURE << "\n";

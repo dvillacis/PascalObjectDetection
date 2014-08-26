@@ -6,7 +6,7 @@
 //! A single point in the Precision Recall curve
 typedef struct {
 	float precision, recall, threshold;
-} PecisionRecallPoint;
+} PrecisionRecallPoint;
 
 //! Precision Recall Class
 /*!
@@ -16,7 +16,7 @@ class PrecisionRecall
 {
 private:
 	//! Collected data from the predictions
-	std::vector<PecisionRecallPoint> _data;
+	std::vector<PrecisionRecallPoint> _data;
 
 	//! Average precision calculated for the current curve
 	float _averagePrecision;

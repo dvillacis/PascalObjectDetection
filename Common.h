@@ -33,10 +33,6 @@
 // Open CV
 #include <opencv2/opencv.hpp>
 
-// Image Lib
-//#include "ImageLib/ImageLib.h"
-
-
 
 // ============================================================================
 // Needed by Windows

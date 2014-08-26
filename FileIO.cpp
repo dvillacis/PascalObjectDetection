@@ -4,7 +4,7 @@ void saveToFile(const std::string &filename, const SupportVectorMachine &svm)
 {
     FILE *f = fopen(filename.c_str(), "wb");
     if(f == NULL) {
-        throw "Could not open file " + filename + " for writing";
+        throw std::runtime_error("ERROR: Could not open file " + filename + " for writing");
     }
 
     svm.save(f);
@@ -15,7 +15,7 @@ void loadFromFile(const std::string &filename, SupportVectorMachine &svm)
 {
     FILE *f = fopen(filename.c_str(), "rb");
     if(f == NULL) {
-        throw "Could not open file " + filename + " for reading";
+        throw std::runtime_error("ERROR: Could not open file " + filename + " for reading");
     }
 
     svm.load(f);

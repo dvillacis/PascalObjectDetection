@@ -29,40 +29,58 @@ static void computePrecisionRecallForThreshold(const vector<float> &gt, const ve
 	cout << "threshold: "<< threshold <<" truePos: " << truePos << " falsePos: " << falsePos << endl;
 }
 
-bool sortByRecall(const PecisionRecallPoint& a, const PecisionRecallPoint& b)
+bool sortByRecall(const PrecisionRecallPoint& a, const PrecisionRecallPoint& b)
 {
 	return a.recall < b.recall;
 }
 
 PrecisionRecall::PrecisionRecall(const std::vector<float> &gt, const std::vector<float>& preds, int nGroundTruthDetections)
 {
-	std::set<float> thresholds;
-	for (int i = 0; i < preds.size(); ++i) {
-		thresholds.insert(preds[i]);
+	vector<float> truePos;
+	vector<float> falsePos;
+	vector<float> falseNeg;
+	vector<float> trueNeg;
+
+	for(int i = 0; i < gt.size(); i++)
+	{
+		if(gt[i] == preds[i])
+		{
+			truePos.push_back(1);
+			falsePos.push_back(0);
+		}
+		else
+		{
+			truePos.push_back(0);
+			falsePos.push_back(1);
+		}
 	}
 
-	_data.resize(0);
+	for(int i = 1; i < truePos.size(); i++)
+	{
+		truePos[i] += truePos[i-1];
+		falsePos[i] += falsePos[i-1];
+	}
 
-	for(std::set<float>::iterator th = thresholds.begin(); th != thresholds.end(); th++) {
-		PecisionRecallPoint pr;
-		computePrecisionRecallForThreshold(gt, preds, *th, nGroundTruthDetections, pr.precision, pr.recall); 
-		pr.threshold = *th;
-
+	for(int i = 0; i < truePos.size(); i++)
+	{
+		PrecisionRecallPoint pr;
+		pr.recall = truePos[i]/truePos.size();
+		pr.precision = truePos[i]/(truePos[i]+falsePos[i]);
 		_data.push_back(pr);
 	}
 
 	std::sort(_data.begin(), _data.end(), sortByRecall);
 
 	// Remove jags in precision recall curve
-	float maxPrecision = -1;
-	for(std::vector<PecisionRecallPoint>::reverse_iterator pr = _data.rbegin(); pr != _data.rend(); pr++) {
-		pr->precision = std::max(maxPrecision, pr->precision);
-		maxPrecision = std::max(pr->precision, maxPrecision);
-	}
+	// float maxPrecision = -1;
+	// for(std::vector<PrecisionRecallPoint>::reverse_iterator pr = _data.rbegin(); pr != _data.rend(); pr++) {
+	// 	pr->precision = std::max(maxPrecision, pr->precision);
+	// 	maxPrecision = std::max(pr->precision, maxPrecision);
+	// }
 
 	// Compute average precision as area under the curve
 	_averagePrecision = 0.0;
-	for(std::vector<PecisionRecallPoint>::iterator pr = _data.begin() + 1, prPrev = _data.begin(); pr != _data.end(); pr++, prPrev++) {
+	for(std::vector<PrecisionRecallPoint>::iterator pr = _data.begin() + 1, prPrev = _data.begin(); pr != _data.end(); pr++, prPrev++) {
 		float xdiff = pr->recall - prPrev->recall;
 		float ydiff = pr->precision - prPrev->precision;
 
@@ -74,18 +92,18 @@ void PrecisionRecall::save(const char* filename) const
 {
 	std::ofstream f(filename);
 
-	if(f.bad()) throw "Could not open file " + (std::string)filename + " for writing";
+	if(f.bad()) throw std::runtime_error("Could not open file " + (std::string)filename + " for writing");
 
 	f << "# precision recall threshold\n";
-	for(std::vector<PecisionRecallPoint>::const_iterator pr = _data.begin(); pr != _data.end(); pr++) {
-		f << pr->precision << " " << pr->recall << " " << pr->threshold << "\n";
+	for(std::vector<PrecisionRecallPoint>::const_iterator pr = _data.begin(); pr != _data.end(); pr++) {
+		f << pr->precision << " " << pr->recall << "\n";
 	}
 }
 
 double  PrecisionRecall::getBestThreshold() const
 {
 	double bestFMeasure = -1, bestThreshold = -1;
-	for(std::vector<PecisionRecallPoint>::const_iterator pr = _data.begin(); pr != _data.end(); pr++) {
+	for(std::vector<PrecisionRecallPoint>::const_iterator pr = _data.begin(); pr != _data.end(); pr++) {
 		double fMeasure = (pr->precision * pr->recall) / (pr->precision + pr->recall);
 
 		if(fMeasure > bestFMeasure) {

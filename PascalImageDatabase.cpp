@@ -128,7 +128,7 @@ void PascalImageDatabase::load(const char *dbFilename)
     ifstream f(dbFilename);
     LOG(INFO) << "Loading the database";
     if(!f.is_open()) {
-        throw "Could not open file " + _dbFilename + " for reading";
+        throw std::runtime_error("ERROR: Could not open file " + _dbFilename + " for reading");
     }
     else{
         string line;
@@ -215,7 +215,7 @@ void PascalImageDatabase::save(const char *dbFilename)
 {
     ofstream f(dbFilename);
     if(!f.is_open()) {
-        throw "Could not open file " + (string)dbFilename + " for writing";
+        throw std::runtime_error("ERROR: Could not open file " + (string)dbFilename + " for writing");
     }
 
     for(int i = 0; i < _labels.size(); i++) {
