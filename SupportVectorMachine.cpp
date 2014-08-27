@@ -26,6 +26,7 @@ SupportVectorMachine::SupportVectorMachine(const ParametersMap &params):
     _model(NULL),
     _data(NULL)
 {
+
     string svm_type = params.getStr(SVM_TYPE);
     string kernel_type = params.getStr(KERNEL_TYPE);
 
@@ -39,6 +40,8 @@ SupportVectorMachine::SupportVectorMachine(const ParametersMap &params):
         _parameter.svm_type = EPSILON_SVR;
     else if (boost::iequals(svm_type,"NU_SVR"))
         _parameter.svm_type = NU_SVR;
+
+    cout << "SVM constructor" << endl;
 
     if(boost::iequals(kernel_type,"LINEAR"))
         _parameter.kernel_type = LINEAR;
@@ -72,7 +75,10 @@ SupportVectorMachine::SupportVectorMachine(const std::string &modelFName):
     _data(NULL)
 {
     LOG(INFO) << "Loading svm model: " << modelFName;
-    load(modelFName);
+    _model = load(modelFName);
+    _model->param.C = 100;
+    _parameter = _model->param;
+
 }
 
 void SupportVectorMachine::_deinit()
@@ -140,7 +146,7 @@ void SupportVectorMachine::printSVMParameters()
     cout << "PROBABILITY: " << _parameter.probability << endl;
 }
 
-void SupportVectorMachine::train(const std::vector<float> &labels, const FeatureCollection &fset)
+void SupportVectorMachine::train(const std::vector<float> &labels, const FeatureCollection &fset, std::string svmModelFName)
 {
     if(labels.size() != fset.size()) throw std::runtime_error("ERROR: Database size is different from feature set size!");
 
@@ -184,11 +190,12 @@ void SupportVectorMachine::train(const std::vector<float> &labels, const Feature
 
     LOG(INFO) << "Problem assigment finished";
 
-    /******** END TODO ********/
-
     // Train the model
     if(_model != NULL) svm_free_and_destroy_model(&_model);
     _model = svm_train(&problem, &_parameter);
+
+    LOG(INFO) << "Saving model file to: " << svmModelFName;
+    save(svmModelFName);
 
     // Cleanup
     delete [] problem.y;
@@ -217,30 +224,6 @@ float SupportVectorMachine::predict(const Feature &feature) const
 
     return decisionValue;
 }
-
-// float SupportVectorMachine::predict(const vector<float> &feature) const
-// {
-//     int dim = feature.size();
-
-//     svm_node *svmNode = new svm_node[dim + 1];
-
-//     svm_node *svmNodeIter = svmNode;
-
-//     for(int i = 0; i < dim; i++) {
-//         float data = feature[i];
-//         svmNodeIter->index = i;
-//         svmNodeIter->value = data;
-//         svmNodeIter++;
-//     }
-//     svmNodeIter->index = -1;
-
-//     double decisionValue;
-//     float label = svm_predict_values(_model, svmNode, &decisionValue);
-
-//     delete [] svmNode;
-
-//     return decisionValue;
-// }
 
 float SupportVectorMachine::predictLabel(const Feature &feature) const
 {
@@ -287,8 +270,10 @@ float SupportVectorMachine::predictLabel(const Feature &feature, double& decisio
     return label;
 }
 
-std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset) const
+std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset)
 {
+    printSVMParameters();
+
     int n = fset.size();
     std::vector<float> preds(n);
     for(int i = 0; i < n; i++) {
@@ -376,42 +361,16 @@ double SupportVectorMachine::getBiasTerm() const
     return _model->rho[0];
 }
 
-void SupportVectorMachine::load(const std::string &filename)
+svm_model * SupportVectorMachine::load(const std::string &filename)
 {
     _deinit();
     // FILE *f = fopen(filename.c_str(), "rb");
     // if(f == NULL) throw "Failed to open file " + filename + " for reading";
-    _model = svm_load_model(filename.c_str());
-}
-
-void SupportVectorMachine::load(FILE *fp)
-{
-    // _deinit();
-
-    // _model = svm_load_model_fp(fp);
-    // if(_model == NULL) {
-    //     throw "Failed to load SVM model";
-    // }
-}
-
-void SupportVectorMachine::save(FILE *fp) const
-{
-    if(_model == NULL) throw std::runtime_error("ERROR: No model to be saved");
-
-    if(svm_save_model_fp(fp, _model) != 0) {
-        throw std::runtime_error("Error while trying to write model to file");
-    }
+    
+    return svm_load_model(filename.c_str());
 }
 
 void SupportVectorMachine::save(const std::string &filename) const
 {
-    FILE *fp = fopen(filename.c_str(), "wb");
-    if(fp == NULL) {
-        throw std::runtime_error("ERROR: Could not open file " + filename + " for writing.");
-    }
-
-    save(fp);
-    if (ferror(fp) != 0 || fclose(fp) != 0) {
-        throw std::runtime_error("ERROR: Error while closing file " + filename);
-    }
+    svm_save_model(filename.c_str(),_model);
 }

@@ -7,7 +7,7 @@ void saveToFile(const std::string &filename, const SupportVectorMachine &svm)
         throw std::runtime_error("ERROR: Could not open file " + filename + " for writing");
     }
 
-    svm.save(f);
+    //svm.save(f);
     fclose(f);
 }
 
@@ -18,7 +18,7 @@ void loadFromFile(const std::string &filename, SupportVectorMachine &svm)
         throw std::runtime_error("ERROR: Could not open file " + filename + " for reading");
     }
 
-    svm.load(f);
+    //svm.load(f);
 
     fclose(f);
 }

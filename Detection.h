@@ -8,7 +8,7 @@ class Detection
 public:
     Detection();
     //Detection(double x, double y, double resp, double width, double height);
-    Detection(cv::Rect rect, double resp);
+    Detection(cv::Rect rect, float resp);
 
     void draw(cv::Mat &img) const;
 
@@ -18,7 +18,7 @@ public:
     cv::Rect rect;
 
     // double x, y;          // Coordinates of the center of the detection
-    double response;      // Response of the detector at (x, y) in the response image
+    float response;      // Response of the detector at (x, y) in the response image
     // double width, height; // Width and height of the support of the feature vector
 };
 

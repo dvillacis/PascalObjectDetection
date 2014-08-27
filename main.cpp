@@ -99,9 +99,9 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
 
         LOG(INFO) << "Training SVM";
         SupportVectorMachine svm(svmParams);
-        svm.train(db.getLabels(), features);
+        svm.train(db.getLabels(), features, svmModelFName);
 
-        saveToFile(svmModelFName, svm);
+        //saveToFile(svmModelFName, svm);
         LOG(INFO) << "SVM Model saved in: " << svmModelFName;
 
         delete featExtractor;
@@ -158,21 +158,23 @@ int mainSVMCrossval(const vector<string> &args, const map<string, string> &opts)
 
             LOG(INFO) << "Predicting";
             vector<float> preds = svm.predict(features);
-            vector<float> predLabels = svm.predictLabel(features);
+            //vector<float> predLabels = svm.predictLabel(features);
 
             LOG(INFO) << "Computing Precision Recall Curve";
-            PrecisionRecall pr(db.getLabels(), predLabels);
+            PrecisionRecall pr(db.getLabels(), preds);
             LOG(INFO) << "Average precision: " << pr.getAveragePrecision();
 
             if(prFName.size() != 0) pr.save(prFName.c_str());
             if(predsFName.size() != 0) {
-                PascalImageDatabase predsDb(predLabels, db.getFilenames());
+                PascalImageDatabase predsDb(preds, db.getFilenames());
                 predsDb.save(predsFName.c_str());
-                PascalImageDatabase targetDb(db.getLabels(), db.getFilenames());
-                targetDb.save(predsFName_label.c_str());
-                PascalImageDatabase scoresDb(preds, db.getFilenames());
-                scoresDb.save(predsFName_scores.c_str());
+                // PascalImageDatabase targetDb(db.getLabels(), db.getFilenames());
+                // targetDb.save(predsFName_label.c_str());
+                // PascalImageDatabase scoresDb(preds, db.getFilenames());
+                // scoresDb.save(predsFName_scores.c_str());
             }
+
+            delete featExtractor;
 
             t = (double)getTickCount() - t;
             LOG(INFO) << "Cross Validation completed in " << t/getTickFrequency() << " seconds.";
@@ -221,7 +223,7 @@ int mainSVMTest(const vector<string> &args, const map<string, string> &opts)
             LOG(INFO) << "Loading SVM model and features extractor from file";
             SupportVectorMachine svm(svmModelFName);
             FeatureExtractor *featExtractor = FeatureExtractor::create(FeatureExtractor::getDefaultParameters("hog"));
-            loadFromFile(svmModelFName, svm);
+            //loadFromFile(svmModelFName, svm);
 
             LOG(INFO) << "Initializing object detector";
             ObjectDetector obdet(svm);
@@ -238,15 +240,9 @@ int mainSVMTest(const vector<string> &args, const map<string, string> &opts)
 
                 // Extracting detections from the source image
                 LOG(INFO) << " --> Extracting detections from the source image";
-                vector<Rect> found;
+                vector<Detection> found;
                 obdet.getDetections(img, found);
-
-                for(int j = 0; j < found.size(); j++){
-                    rectangle(img,found[j].tl(),found[j].br(),Scalar(255,0,0),2);
-                }
-
-                imshow("Custom Detection", img);
-                waitKey(0);
+                dets[i] = found;
 
                 img.release();
                 
@@ -265,6 +261,8 @@ int mainSVMTest(const vector<string> &args, const map<string, string> &opts)
 
             if(predsFName.size()) predsDb.save(predsFName.c_str());
             if(prFName.size()) pr.save(prFName.c_str());
+
+            delete featExtractor;
 
             return EXIT_SUCCESS;
         }
@@ -366,7 +364,7 @@ int mainDEMO(const vector<string> &args, const map<string, string> &opts)
             LOG(INFO) << "Loading SVM model and features extractor from file";
             SupportVectorMachine svm(svmModelFName);
             FeatureExtractor *featExtractor = FeatureExtractor::create(FeatureExtractor::getDefaultParameters("hog"));
-            loadFromFile(svmModelFName, svm);
+            //loadFromFile(svmModelFName, svm);
 
             LOG(INFO) << "Initializing object detector";
             ObjectDetector obdet(svm);
@@ -383,12 +381,10 @@ int mainDEMO(const vector<string> &args, const map<string, string> &opts)
 
                 // Extracting detections from the source image
                 LOG(INFO) << " --> Extracting detections from the source image";
-                vector<Rect> found;
+                vector<Detection> found;
                 obdet.getDetections(img, found);
 
-                for(int j = 0; j < found.size(); j++){
-                    rectangle(img,found[j].tl(),found[j].br(),Scalar(255,0,0),2);
-                }
+                drawDetections(img,found);
 
                 imshow("Custom Detection", img);
                 waitKey(0);
@@ -396,6 +392,7 @@ int mainDEMO(const vector<string> &args, const map<string, string> &opts)
                 img.release();
                 
             }
+            delete featExtractor;
             return EXIT_SUCCESS;
         }
         else
@@ -421,6 +418,10 @@ int main(int argc, char **argv)
     parseCommandLineOptions(argc, argv, args, opts);
 
     try {
+        if(args.size() < 2) {
+            printUsage(args[0]);
+            return EXIT_FAILURE;
+        }
         if (strcasecmp(args[1].c_str(), "TRAIN") == 0) {
             return mainSVMTrain(args, opts);
         } else if (strcasecmp(args[1].c_str(), "CROSSVAL") == 0) {

@@ -1,11 +1,16 @@
 #include <boost/foreach.hpp>
-//#include <modules/objdetect/src/hog.cpp>
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/max.hpp>
+#include <boost/accumulators/statistics/min.hpp>
+
 #include "ObjectDetector.h"
 
 #define WIN_SIZE_NMS_KEY   "nms_win_size"
 #define RESP_THESH_KEY     "sv_response_threshold"
 #define OVERLAP_THRESH_KEY "detection_overlap_threshold"
 
+using namespace boost::accumulators;
 using namespace cv;
 using namespace std;
 
@@ -22,7 +27,7 @@ ObjectDetector::~ObjectDetector()
     //HOGDescriptor::~HOGDescriptor();
 }
 
-void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
+void ObjectDetector::getDetections(Mat img, vector<Detection>& found)
 {
     //TODO: Put the hit theshold to be configurable from the outside
     _winSize = Size(64,128);
@@ -38,49 +43,53 @@ void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
     vector<Point> locations;
     vector<double> weights;
 
-    float hitThreshold = 1;
+    float hitThreshold = -1;
 
-    // Mat grayImg;
-    // cv::cvtColor(img, grayImg, CV_RGB2GRAY);
-    // Mat testImg;
-    // blur(img, testImg, Size(3,3));
-    // Canny(testImg, testImg, 2, 2*3, 3);
 
-    // Detecting on first level of the pyramid
-    // Mat imgDown;
-    // pyrDown(img,imgDown,Size(img.cols/2,img.rows/2));
-    //vector<Rect> rawFound;
-
-    //hog.detectMultiScale(img, found, 4.5, Size(8,8), Size(16,16), 1.05, 0);
+    // vector<Rect> f;
+    // vector<double> w;
+    // hog.detectMultiScale(img, f, w, hitThreshold, Size(32,32), Size(0,0), 1.05,6);
+    // for(int i = 0; i < f.size(); i++)
+    // {
+    //     Detection det(f[i],w[i]);
+    //     found.push_back(det);
+    //     cout << det << endl;
+    //     // if(w[i] > hitThreshold)
+    //     // {
+    //     //     Detection det(f[i],w[i]);
+    //     //     found.push_back(det);
+    //     //     cout << det << endl;
+    //     // }
+    // }
 
     detect(img,hits,weights,hitThreshold,Size(16,16),Size(0,0),locations, &hog);
     //HOGDescriptor::detect(img,hits,weights,0.0,Size(8,8),Size(32,32),locations);
     for(int i = 0; i < hits.size(); i++)
     {
         Rect r(hits[i],Size(64,128));
-        //Rect r(Point(hits[i].x*(2),hits[i].y*(2)),Size(64*(2),128*(2)));
-        found.push_back(r);
-        //weights[i] *= 100;
-        cout << r << " score: " << weights[i] << endl;
+        Detection det(r,weights[i]);
+        found.push_back(det);
+        cout << det << endl;
     }
 
-    // cout << found.size() << endl;
-    // groupRectangles(found, 2, 0.2);
-    // cout << found.size() << endl;
+    // // cout << found.size() << endl;
+    // // groupRectangles(found, 2, 0.2);
+    // // cout << found.size() << endl;
 
-    // cout << "Detecting on upper pyramid" << endl;
-    // Mat imgDown;
-    // hits.clear();
-    // locations.clear();
-    // weights.clear();
-    // pyrDown(img,imgDown,Size(img.cols/2,img.rows/2));
-    // detect(imgDown,hits,weights,hitThreshold,Size(8,8),Size(0,0),locations, &hog);
-    // for(int j = 0; j < hits.size(); j++)
-    // {
-    //     Rect r(Point(hits[j].x*2,hits[j].y*2),Size(64*2,128*2));
-    //     found.push_back(r);
-    //     cout << r << " score: " << weights[j] << endl;
-    // }
+    cout << "Detecting on upper pyramid" << endl;
+    Mat imgDown;
+    hits.clear();
+    locations.clear();
+    weights.clear();
+    pyrDown(img,imgDown,Size(img.cols/2,img.rows/2));
+    detect(imgDown,hits,weights,hitThreshold,Size(8,8),Size(0,0),locations, &hog);
+    for(int j = 0; j < hits.size(); j++)
+    {
+        Rect r(Point(hits[j].x*2,hits[j].y*2),Size(64*2,128*2));
+        Detection det(r,weights[j]);
+        found.push_back(det);
+        cout << det << endl;
+    }
 
     // cout << "Detecting on lower pyramid" << endl;
     // Mat imgUp;
@@ -96,7 +105,7 @@ void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
     //     cout << r << " score: " << weights[j] << endl;
     // }
     
-    groupRectangles(found,weights,4,0.2);
+    //groupRectangles(found,weights,4,0.2);
 
     //HOGDescriptor::detectMultiScale(img,found, 0, Size(8,8), Size(32,32), 1.05, 3,true);
 }
@@ -112,12 +121,28 @@ void ObjectDetector::detect(const Mat& img, vector<Point>& hits, vector<double>&
             Mat patch = img(r);
             vector<float> patchWeights;
             hog->compute(patch, patchWeights, Size(8,8), Size(0,0));
-            double score;
-            float predictedLabel = _svm.predictLabel(patchWeights,score);
 
-            if(predictedLabel > 0)// && score > hitThreshold)
+            vector<float> features;
+            int num_features = patchWeights.size();
+            accumulator_set<float, stats<tag::max, tag::min> > acc;
+            for(int k = 0; k < num_features; ++k)
+                acc(patchWeights[k]);
+            //float mu = boost::accumulators::mean(acc);
+            //float std = sqrt(moment<2>(acc));
+            float xmax = boost::accumulators::max(acc);
+            float xmin = boost::accumulators::min(acc);
+
+            for(int i = 0; i < num_features; i++)
             {
-                cout << "predictedLabel: " << predictedLabel << endl;
+                //features.push_back((patchWeights[i]-mu)/std);
+                features.push_back((patchWeights[i]-xmin)/(xmax-xmin));
+                //cout << features[i] << endl;
+            }
+
+            double score;
+            float predictedLabel = _svm.predictLabel(features,score);
+            if(predictedLabel > 0) //&& score > hitThreshold)
+            {
                 hits.push_back(Point(i,j));
                 weights.push_back(score);
             }
@@ -152,7 +177,7 @@ void ObjectDetector::groupRectangles(vector<cv::Rect>& rectList, vector<double>&
         rrects[cls].y += rectList[i].y;
         rrects[cls].width += rectList[i].width;
         rrects[cls].height += rectList[i].height;
-        foundWeights[cls] = max(foundWeights[cls], weights[i]);
+        foundWeights[cls] = cv::max(foundWeights[cls], weights[i]);
         numInClass[cls]++;
     }
 

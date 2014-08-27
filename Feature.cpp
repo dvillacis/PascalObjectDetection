@@ -1,5 +1,10 @@
 #include "Feature.h"
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/max.hpp>
+#include <boost/accumulators/statistics/min.hpp>
 
+using namespace boost::accumulators;
 using namespace cv;
 
 void FeatureExtractor::operator()(Mat &img, Feature &feat) const
@@ -151,7 +156,25 @@ void HOGFeatureExtractor::operator()(Mat &img, Feature &feat) const
     // if(grayImg.rows < _hog.winSize.height)
     //     resize(grayImg,grayImg,cv::Size(grayImg.cols,_hog.winSize.height));
 
-    hog.compute(img, feat, Size(8,8), Size(0,0));
+    vector<float> weights;
+    
+    hog.compute(img, weights, Size(8,8), Size(0,0));
+    int num_features = weights.size();
+
+    //accumulator_set<float, stats<tag::mean, tag::moment<2> > > acc;
+    accumulator_set<float, stats<tag::max, tag::min> > acc;
+    for(int k = 0; k < num_features; ++k)
+        acc(weights[k]);
+    // float mu = boost::accumulators::mean(acc);
+    // float std = sqrt(moment<2>(acc));
+    float xmax = boost::accumulators::max(acc);
+    float xmin = boost::accumulators::min(acc);
+
+    for(int i = 0; i < num_features; i++)
+    {
+        //feat.push_back((weights[i]-mu)/std);
+        feat.push_back((weights[i]-xmax)/(xmax-xmin));
+    }
     
     // Mat test;
     // renderHOG(img, test, extractedFeatures, hog.winSize, hog.cellSize, 1, 1),

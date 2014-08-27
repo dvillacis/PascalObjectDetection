@@ -17,7 +17,7 @@ figure
 plot(X_pos,Y_pos,'b*');
 hold on;
 %figure;
-plot(X_neg,Y_neg,'r.');
+plot(X_neg,Y_neg,'r*');
 
 title(plot_title)
 legend('Positive Samples','Negative Samples');

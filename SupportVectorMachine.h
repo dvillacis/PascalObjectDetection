@@ -48,7 +48,7 @@ public:
     ~SupportVectorMachine();
 
     //! Train the SVM model
-    void train(const std::vector<float> &labels, const FeatureCollection &fset);
+    void train(const std::vector<float> &labels, const FeatureCollection &fset, std::string svmModelFName);
 
     //! Predict the decision value of a feature
     /*! 
@@ -78,7 +78,7 @@ public:
     float predictLabel(const vector<float> &feature, double& decisionValue) const;
 
     //! Gets a collection of predictions given a collection of features
-    std::vector<float> predict(const FeatureCollection &fset) const;
+    std::vector<float> predict(const FeatureCollection &fset);
     std::vector<float> predictLabel(const FeatureCollection &fset) const;
 
     //! Get the primal form for the svm
@@ -101,15 +101,13 @@ public:
     /*!
         \param filename Path where the configuration file is located.
     */
-    void load(const std::string &filename);
-    void load(FILE *fp);
+    svm_model * load(const std::string &filename);
 
     //! Save model to file
     /*!
         \param filename Path where the configuration file will be located.
     */
     void save(const std::string &filename) const;
-    void save(FILE *fp) const;
 
     //! Verify if the svm is initiallized
     bool initialized() const { return _model != NULL; }

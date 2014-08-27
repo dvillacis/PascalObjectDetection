@@ -7,7 +7,7 @@ Detection::Detection():
     rect(Rect(0,0,0,0)), response(0)
 {}
 
-Detection::Detection(Rect rect, double response):
+Detection::Detection(Rect rect, float response):
     rect(rect), response(response)
 {}
 
@@ -54,7 +54,7 @@ bool sortByResponse(const pair<int, float> &a, const pair<int, float> &b)
 void computeLabels(const vector<Detection> &gt, const vector<Detection> &found,
               vector<float> &label, vector<float> &response)
 {
-    const double overlapThresh = 0.5;
+    const double overlapThresh = 0.2;
 
     vector<float> labels;
     vector<pair<int, float> > idxResp(found.size());
@@ -103,7 +103,6 @@ void computeLabels(const vector<Detection> &gt, const vector<Detection> &found,
 void computeLabels(const vector<vector<Detection> > &gt, const vector<vector<Detection> > &found,
               vector<float> &label, vector<float> &response, int& nDets)
 {
-    
     assert(gt.size() == found.size());
 
     response.resize(0);

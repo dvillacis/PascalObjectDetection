@@ -16,7 +16,7 @@ public:
     ObjectDetector(const SupportVectorMachine& svm);
     ~ObjectDetector();
 
-    void getDetections(Mat img, vector<Rect>& found);
+    void getDetections(Mat img, vector<Detection>& found);
     void detect(const Mat& img, vector<Point>& hits, vector<double>& weights, double hitThreshold,
 							Size winStride, Size padding, const vector<Point>& locations, HOGDescriptor* hog);
 private:
