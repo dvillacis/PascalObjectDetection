@@ -303,9 +303,9 @@ std::vector<float> SupportVectorMachine::predict(const FeatureCollection &fset) 
             printf("\033[u");
         }
 
-
         preds[i] = predict(fset[i]);
     }
+    printf("\n");
 
     return preds;
 }
@@ -329,7 +329,7 @@ std::vector<float> SupportVectorMachine::predictLabel(const FeatureCollection &f
         double decisionValue;
         preds[i] = predictLabel(fset[i], decisionValue);
     }
-
+    printf("\n");
     return preds;
 }
 
@@ -399,7 +399,7 @@ void SupportVectorMachine::save(FILE *fp) const
     if(_model == NULL) throw std::runtime_error("ERROR: No model to be saved");
 
     if(svm_save_model_fp(fp, _model) != 0) {
-        throw "Error while trying to write model to file";
+        throw std::runtime_error("Error while trying to write model to file");
     }
 }
 
@@ -415,62 +415,3 @@ void SupportVectorMachine::save(const std::string &filename) const
         throw std::runtime_error("ERROR: Error while closing file " + filename);
     }
 }
-
-void SupportVectorMachine::predictSlidingWindow(const Feature &feat, Mat &response) const
-{
-    // response = Mat::zeros(feat.cols,feat.rows,CV_32FC2);
-    // cout << feat.size() << endl;
-    /******** BEGIN TODO ********/
-    // Sliding window prediction.
-    //
-    // In this project we are using a linear SVM. This means that
-    // it's classification function is very simple, consisting of a
-    // dot product of the feature vector with a set of weights learned
-    // during training, followed by a subtraction of a bias term
-    //
-    //          pred <- dot(feat, weights) - bias term
-    //
-    // Now this is very simple to compute when we are dealing with
-    // cropped images, our computed features have the same dimensions
-    // as the SVM weights. Things get a little more tricky when you
-    // want to evaluate this function over all possible subwindows of
-    // a larger feature, one that we would get by running our feature
-    // extraction on an entire image.
-    //
-    // Here you will evaluate the above expression by breaking
-    // the dot product into a series of convolutions (remember that
-    // a convolution can be though of as a point wise dot product with
-    // the convolution kernel), each one with a different band.
-    //
-    // Convolve each band of the SVM weights with the corresponding
-    // band in feat, and add the resulting score image. The final
-    // step is to subtract the SVM bias term given by this->getBiasTerm().
-    //
-    // Hint: you might need to set the origin for the convolution kernel
-    // in order to get the result from convoltion to be correctly centered
-    //
-    // Useful functions:
-    // Convolve, BandSelect, this->getWeights(), this->getBiasTerm()
-
-    // double bias = this->getBiasTerm();
-    // Mat convImg = Mat::zeros(feat.cols,feat.rows,CV_32FC2);
-
-    /******** END TODO ********/
-}
-
-void SupportVectorMachine::predictSlidingWindow(const FeatureCollection &featPyr, vector<Mat> &responsePyr) const
-{
-    responsePyr.resize(featPyr.size());
-    for (int i = 0; i < featPyr.size(); i++) {
-        this->predictSlidingWindow(featPyr[i], responsePyr[i]);
-    }
-}
-
-// Mat SupportVectorMachine::renderSVMWeights(const FeatureExtractor *featExtractor)
-// {
-//     //Feature svmW = this->getWeights();
-//     svmW -= this->getBiasTerm() / (svmW.size().width * svmW.size().height);
-
-//     return featExtractor->renderPosNegComponents(svmW);
-// }
-

@@ -84,15 +84,6 @@ public:
     //! Get the primal form for the svm
     std::vector<float> getDetector() const;
 
-    // Runs classifier at every location of feature feat, returns a
-    // single channel image with classifier output at each location.
-    void predictSlidingWindow(const Feature &feat, Mat &response) const;
-
-    // Runs classifier on each level of the pyramid, returns a pyramid
-    // where each level contains the response of the classifier at the
-    // corresponding level of the input pyramid.
-    void predictSlidingWindow(const FeatureCollection &featPyr, vector<Mat> &responsePyr) const;
-
     //! Print the parameters chosen for the SVM
     void printSVMParameters();
 

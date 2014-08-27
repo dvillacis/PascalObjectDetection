@@ -31,6 +31,8 @@ private:
     SupportVectorMachine _svm;
     vector<float> _svmDetector;
 
+    void groupRectangles(vector<Rect>& rectList, vector<double>& weights, int groupThreshold, double eps);
+
 };
 
 #endif // OBJECT_DETECTOR_H

@@ -60,16 +60,16 @@ for k = 1:2:length(varargin)
             X = pr(:,2);
             Y = pr(:,1);
             
-            [X, idxs] = sort(X);
-            Y = Y(idxs);
-            
-            all_idxs = (1:length(Y))';
-            for i = 2:length(Y)
-                sel = all_idxs < i & Y < Y(i);
-                if nnz(sel) > 0
-                    Y(sel) = Y(i);
-                end
-            end
+%             [X, idxs] = sort(X);
+%             Y = Y(idxs);
+%             
+%             all_idxs = (1:length(Y))';
+%             for i = 2:length(Y)
+%                 sel = all_idxs < i & Y < Y(i);
+%                 if nnz(sel) > 0
+%                     Y(sel) = Y(i);
+%                 end
+%             end
             
             plot(X, Y, '-', 'Color', colors(plot_num,:));
             

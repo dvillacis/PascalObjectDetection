@@ -38,6 +38,8 @@ void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
     vector<Point> locations;
     vector<double> weights;
 
+    float hitThreshold = 1;
+
     // Mat grayImg;
     // cv::cvtColor(img, grayImg, CV_RGB2GRAY);
     // Mat testImg;
@@ -47,51 +49,54 @@ void ObjectDetector::getDetections(Mat img, vector<Rect>& found)
     // Detecting on first level of the pyramid
     // Mat imgDown;
     // pyrDown(img,imgDown,Size(img.cols/2,img.rows/2));
-    detect(img,hits,weights,1,Size(16,16),Size(0,0),locations, &hog);
+    //vector<Rect> rawFound;
+
+    //hog.detectMultiScale(img, found, 4.5, Size(8,8), Size(16,16), 1.05, 0);
+
+    detect(img,hits,weights,hitThreshold,Size(16,16),Size(0,0),locations, &hog);
     //HOGDescriptor::detect(img,hits,weights,0.0,Size(8,8),Size(32,32),locations);
     for(int i = 0; i < hits.size(); i++)
     {
         Rect r(hits[i],Size(64,128));
         //Rect r(Point(hits[i].x*(2),hits[i].y*(2)),Size(64*(2),128*(2)));
         found.push_back(r);
+        //weights[i] *= 100;
         cout << r << " score: " << weights[i] << endl;
     }
 
-    // Detecting on one scale down
-    // int num_levels = 2;
-    // Mat imgDown = img;
-    // for(int i = 1; i <= num_levels; ++i){
-        // cout << i << endl;
-    // double scale = 1;
+    // cout << found.size() << endl;
+    // groupRectangles(found, 2, 0.2);
+    // cout << found.size() << endl;
 
+    // cout << "Detecting on upper pyramid" << endl;
     // Mat imgDown;
-    // int i = 1;
     // hits.clear();
     // locations.clear();
     // weights.clear();
-    // pyrDown(img,imgDown,Size(img.cols/scale,img.rows/scale));
-    // detectLinearKernel(imgDown,hits,weights,4,Size(8,8),Size(32,32),locations);
+    // pyrDown(img,imgDown,Size(img.cols/2,img.rows/2));
+    // detect(imgDown,hits,weights,hitThreshold,Size(8,8),Size(0,0),locations, &hog);
     // for(int j = 0; j < hits.size(); j++)
     // {
-    //     Rect r(Point(hits[j].x*(scale*i),hits[j].y*(scale*i)),Size(64*(scale*i),128*(scale*i)));
+    //     Rect r(Point(hits[j].x*2,hits[j].y*2),Size(64*2,128*2));
     //     found.push_back(r);
     //     cout << r << " score: " << weights[j] << endl;
     // }
 
+    // cout << "Detecting on lower pyramid" << endl;
     // Mat imgUp;
     // hits.clear();
     // locations.clear();
     // weights.clear();
-    // pyrUp(img,imgUp,Size(img.cols*scale,img.rows*scale));
-    // detectLinearKernel(imgUp,hits,weights,4,Size(8,8),Size(32,32),locations);
+    // pyrUp(img,imgUp,Size(img.cols*2,img.rows*2));
+    // detect(imgUp,hits,weights,hitThreshold,Size(32,32),Size(0,0),locations, &hog);
     // for(int j = 0; j < hits.size(); j++)
     // {
-    //     Rect r(Point(hits[j].x/(scale*i),hits[j].y/(scale*i)),Size(64/(scale*i),128/(scale*i)));
+    //     Rect r(Point(hits[j].x/2,hits[j].y/2),Size(64/2,128/2));
     //     found.push_back(r);
     //     cout << r << " score: " << weights[j] << endl;
     // }
-    //}
-
+    
+    groupRectangles(found,weights,4,0.2);
 
     //HOGDescriptor::detectMultiScale(img,found, 0, Size(8,8), Size(32,32), 1.05, 3,true);
 }
@@ -109,12 +114,96 @@ void ObjectDetector::detect(const Mat& img, vector<Point>& hits, vector<double>&
             hog->compute(patch, patchWeights, Size(8,8), Size(0,0));
             double score;
             float predictedLabel = _svm.predictLabel(patchWeights,score);
-            if(predictedLabel > 0)
+
+            if(predictedLabel > 0)// && score > hitThreshold)
             {
+                cout << "predictedLabel: " << predictedLabel << endl;
                 hits.push_back(Point(i,j));
                 weights.push_back(score);
             }
         }
     }
     
+}
+
+void ObjectDetector::groupRectangles(vector<cv::Rect>& rectList, vector<double>& weights, int groupThreshold, double eps)
+{
+    cout << "Grouping rectangles" << endl;
+    if( groupThreshold <= 0 || rectList.empty() )
+    {
+        return;
+    }
+
+    CV_Assert(rectList.size() == weights.size());
+
+    vector<int> labels;
+    int nclasses = partition(rectList, labels, SimilarRects(eps));
+    cout << "nclasses: " << nclasses << endl;
+
+    vector<cv::Rect_<double> > rrects(nclasses);
+    vector<int> numInClass(nclasses, 0);
+    vector<double> foundWeights(nclasses, DBL_MIN);
+    int i, j, nlabels = (int)labels.size();
+
+    for( i = 0; i < nlabels; i++ )
+    {
+        int cls = labels[i];
+        rrects[cls].x += rectList[i].x;
+        rrects[cls].y += rectList[i].y;
+        rrects[cls].width += rectList[i].width;
+        rrects[cls].height += rectList[i].height;
+        foundWeights[cls] = max(foundWeights[cls], weights[i]);
+        numInClass[cls]++;
+    }
+
+    for( i = 0; i < nclasses; i++ )
+    {
+        // find the average of all ROI in the cluster
+        cv::Rect_<double> r = rrects[i];
+        double s = 1.0/numInClass[i];
+        rrects[i] = cv::Rect_<double>(cv::saturate_cast<double>(r.x*s),
+            cv::saturate_cast<double>(r.y*s),
+            cv::saturate_cast<double>(r.width*s),
+            cv::saturate_cast<double>(r.height*s));
+    }
+
+    rectList.clear();
+    weights.clear();
+
+    for( i = 0; i < nclasses; i++ )
+    {
+        cv::Rect r1 = rrects[i];
+        int n1 = numInClass[i];
+        double w1 = foundWeights[i];
+        cout << "n1: " << n1 << " groupThreshold: " << groupThreshold << endl;
+        // if( n1 <= groupThreshold )
+        //     continue;
+        // filter out small rectangles inside large rectangles
+        for( j = 0; j < nclasses; j++ )
+        {
+            int n2 = numInClass[j];
+
+            if( j == i || n2 <= groupThreshold )
+                continue;
+
+            cv::Rect r2 = rrects[j];
+
+            int dx = cv::saturate_cast<int>( r2.width * eps );
+            int dy = cv::saturate_cast<int>( r2.height * eps );
+
+            if( r1.x >= r2.x - dx &&
+                r1.y >= r2.y - dy &&
+                r1.x + r1.width <= r2.x + r2.width + dx &&
+                r1.y + r1.height <= r2.y + r2.height + dy &&
+                (n2 > std::max(3, n1) || n1 < 3) )
+                break;
+        }
+
+        if( j == nclasses )
+        {
+            cout << "Adding r1: " << r1 << " weight: " << w1 << endl;
+            rectList.push_back(r1);
+            weights.push_back(w1);
+        }
+    }
 }

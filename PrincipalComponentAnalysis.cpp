@@ -38,6 +38,7 @@ void PrincipalComponentAnalysis::compute(const Mat data, const PascalImageDataba
 	int num_principal_components = 2;
 
 	PCA pca(data, Mat(), CV_PCA_DATA_AS_COL, num_principal_components);
+	PCA pca2(data, Mat(), CV_PCA_DATA_AS_COL);
 
 	for(int i = 0; i < data.cols; ++i)
 	{
@@ -48,9 +49,8 @@ void PrincipalComponentAnalysis::compute(const Mat data, const PascalImageDataba
 		proj.release();
 	}
 
-	//TODO: Print the % of variability retained
-
-	LOG(INFO) << "Percentage of variability retained: ";
+	float percentage = (pca.eigenvalues.at<float>(0) + pca.eigenvalues.at<float>(1))/cv::sum(pca2.eigenvalues)[0];
+	LOG(INFO) << "Percentage of variability retained in first two dimensions: " << percentage*100 << "%";
 }
 
 void PrincipalComponentAnalysis::savePCAFile(const string pcaFilename)

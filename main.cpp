@@ -16,11 +16,11 @@ void printUsage(const std::string &execName)
 {
     printf("Usage:\n");
     printf("\t%s -h\n", execName.c_str());
-    printf("\t%s TRAIN   -c <category name> [-p <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
-    printf("\t%s PRED    -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
-    printf("\t%s PREDSL  -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
-    printf("\t%s PCA     -c <category name> <in:database> [<out:pca_data.dat>]\n", execName.c_str());
-    printf("\t%s VIDEO   <in:svm model>\n\n", execName.c_str());
+    printf("\t%s TRAIN      -c <category name> [-p <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
+    printf("\t%s CROSSVAL   -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s TEST       -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s PCA        -c <category name> <in:database> [<out:pca_data.dat>]\n", execName.c_str());
+    printf("\t%s DEMO       -c <category name> <in:database> <in:svm model>\n\n", execName.c_str());
 }
 
 void parseCommandLineOptions(int argc, char **argv, vector<std::string> &args, map<std::string, string> &opts)
@@ -116,7 +116,7 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     return EXIT_SUCCESS;
 }
 
-int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
+int mainSVMCrossval(const vector<string> &args, const map<string, string> &opts)
 {
     if(args.size() != 6) {
         throw std::runtime_error("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
@@ -174,6 +174,7 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
                 scoresDb.save(predsFName_scores.c_str());
             }
 
+            t = (double)getTickCount() - t;
             LOG(INFO) << "Cross Validation completed in " << t/getTickFrequency() << " seconds.";
 
             return EXIT_SUCCESS;
@@ -189,7 +190,7 @@ int mainSVMPredict(const vector<string> &args, const map<string, string> &opts)
     }
 }
 
-int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, string> &opts)
+int mainSVMTest(const vector<string> &args, const map<string, string> &opts)
 {
     // Detection over multiple scales with non maxima suppression
     if(args.size() != 6) {
@@ -218,7 +219,7 @@ int mainSVMPredictSlidingWindow(const vector<string> &args, const map<string, st
             cout << db << endl;
 
             LOG(INFO) << "Loading SVM model and features extractor from file";
-            SupportVectorMachine svm;
+            SupportVectorMachine svm(svmModelFName);
             FeatureExtractor *featExtractor = FeatureExtractor::create(FeatureExtractor::getDefaultParameters("hog"));
             loadFromFile(svmModelFName, svm);
 
@@ -324,6 +325,7 @@ int mainPCA(const vector<string> &args, const map<string, string> &opts)
         pca.compute(data,db);
         pca.savePCAFile(pcaFName);
 
+        t = (double)getTickCount() - t;
         LOG(INFO) << "PCA completed in " << t/getTickFrequency() << " seconds.";
 
         return EXIT_SUCCESS;
@@ -334,49 +336,76 @@ int mainPCA(const vector<string> &args, const map<string, string> &opts)
     }
 }
 
-int mainVIDEO(const vector<string> &args, const map<string, string> &opts)
+int mainDEMO(const vector<string> &args, const map<string, string> &opts)
 {
-    if(args.size() < 3) {
+    if(args.size() != 4) {
         throw std::runtime_error("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
     }
 
-    string svmModelFName = args[2];
+    string dbFName = args[2];
+    string svmModelFName = args[3];
+    string prFName = (args.size() >= 5) ? args[4] : "";
+    string predsFName = (args.size() >= 6) ? args[5] : "";
 
-    if(boost::filesystem::exists(svmModelFName))
-    {
-        LOG(INFO) << "Loading SVM model and features extractor from file";
-        SupportVectorMachine svm;
-        FeatureExtractor *featExtractor = FeatureExtractor::create(FeatureExtractor::getDefaultParameters("hog"));
-        loadFromFile(svmModelFName, svm);
-
-        LOG(INFO) << "Initializing object detector";
-        //vector<float> svmDetector = svm.getDetector();
-        ObjectDetector obdet(svm);
-        //obdet.setDetector(svm.getDetector());
-
-        VideoCapture capture(0);
-        if(!capture.isOpened())
-            throw "Couldnt open the camera";
-        capture.set(CV_CAP_PROP_FRAME_WIDTH, 256);
-        capture.set(CV_CAP_PROP_FRAME_HEIGHT, 256);
-        string windowName = "Live Feed Detection";
-        for(;;)
-        {
-            Mat frame;
-            vector<Rect> found;
-            capture >> frame;
-            obdet.getDetections(frame,found);
-            for(int j = 0; j < found.size(); j++){
-                rectangle(frame,found[j].tl(),found[j].br(),Scalar(255,0,0),2);
-            }
-            imshow(windowName,frame);
-        }
-
-        return EXIT_SUCCESS;
+    string category;
+    if(opts.count("-c") == 1) {
+        category = opts.at("-c");
+    } else {
+        throw std::runtime_error("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
     }
-     else
+
+    if(boost::filesystem::exists(dbFName))
     {
-        throw std::runtime_error("ERROR: SVM Model file doesn't exist in: " + svmModelFName);
+        if(boost::filesystem::exists(svmModelFName))
+        {
+
+            LOG(INFO) << "Loading image database";
+            ImageDatabase db(dbFName, category);
+            cout << db << endl;
+
+            LOG(INFO) << "Loading SVM model and features extractor from file";
+            SupportVectorMachine svm(svmModelFName);
+            FeatureExtractor *featExtractor = FeatureExtractor::create(FeatureExtractor::getDefaultParameters("hog"));
+            loadFromFile(svmModelFName, svm);
+
+            LOG(INFO) << "Initializing object detector";
+            ObjectDetector obdet(svm);
+
+            vector<vector<Detection> > dets(db.getSize());
+
+            for(int i = 0; i < db.getSize(); i++) {
+                LOG(INFO) << "Processing image " << setw(4) << (i + 1) << " of " << db.getSize();
+
+                string imgFName = db.getFilenames()[i];
+
+                // load image
+                Mat img = imread(imgFName,CV_LOAD_IMAGE_COLOR);
+
+                // Extracting detections from the source image
+                LOG(INFO) << " --> Extracting detections from the source image";
+                vector<Rect> found;
+                obdet.getDetections(img, found);
+
+                for(int j = 0; j < found.size(); j++){
+                    rectangle(img,found[j].tl(),found[j].br(),Scalar(255,0,0),2);
+                }
+
+                imshow("Custom Detection", img);
+                waitKey(0);
+
+                img.release();
+                
+            }
+            return EXIT_SUCCESS;
+        }
+        else
+        {
+            throw std::runtime_error("ERROR: SVM Model file doesn't exist in: " + svmModelFName);
+        }
+    }
+    else
+    {
+        throw std::runtime_error("ERROR: Pascal testing database file doesn't exist in: " + dbFName);
     }
 }
 
@@ -394,14 +423,14 @@ int main(int argc, char **argv)
     try {
         if (strcasecmp(args[1].c_str(), "TRAIN") == 0) {
             return mainSVMTrain(args, opts);
-        } else if (strcasecmp(args[1].c_str(), "PRED") == 0) {
-            return mainSVMPredict(args, opts);
-        } else if (strcasecmp(args[1].c_str(), "PREDSL") == 0) {
-            return mainSVMPredictSlidingWindow(args, opts);
+        } else if (strcasecmp(args[1].c_str(), "CROSSVAL") == 0) {
+            return mainSVMCrossval(args, opts);
+        } else if (strcasecmp(args[1].c_str(), "TEST") == 0) {
+            return mainSVMTest(args, opts);
         } else if (strcasecmp(args[1].c_str(), "PCA") == 0) {
             return mainPCA(args,opts);
-        } else if (strcasecmp(args[1].c_str(), "VIDEO") == 0) {
-            return mainVIDEO(args,opts);
+        } else if (strcasecmp(args[1].c_str(), "DEMO") == 0) {
+            return mainDEMO(args,opts);
         } else {
             printUsage(args[0]);
             return EXIT_FAILURE;
