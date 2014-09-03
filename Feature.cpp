@@ -96,6 +96,46 @@ FeatureExtractor * FeatureExtractor::load(FILE *f)
     return FeatureExtractor::create(params);
 }
 
+void FeatureExtractor::scale(FeatureCollection &featureCollection,  FeatureCollection &scaledFeatureCollection)
+{
+    vector<float> feature_max(featureCollection[0].size(),0.0);
+    vector<float> feature_min(featureCollection[0].size(),0.0);
+
+    // Fill the max and min vectors
+    for(int i = 0; i < featureCollection.size(); i++)
+    {
+        Feature f = featureCollection[i];
+        for(int j = 0; j < f.size(); j++)
+        {
+            feature_max[j] = std::max(feature_max[j],f[j]);
+            feature_min[j] = std::min(feature_min[j],f[j]);
+        }
+    }
+
+    // Scale the feature collection
+    for(int i = 0; i < featureCollection.size(); i++)
+    {
+        Feature f = featureCollection[i];
+        Feature scaledF;
+        for(int j = 0; j < feature_max.size(); j++)
+        {
+            float value = f[j];
+            if(value == feature_min[j])
+                value = -1;
+            else if(value == feature_max[j])
+                value = 1;
+            else
+            {
+                value = -1 + (2 * ((f[j]-feature_min[j])/(feature_max[j]-feature_min[j])));
+            }      
+            scaledF.push_back(value);          
+        }
+
+        scaledFeatureCollection.push_back(scaledF);
+
+    }
+}
+
 // ============================================================================
 // HOG
 // ============================================================================
@@ -156,25 +196,25 @@ void HOGFeatureExtractor::operator()(Mat &img, Feature &feat) const
     // if(grayImg.rows < _hog.winSize.height)
     //     resize(grayImg,grayImg,cv::Size(grayImg.cols,_hog.winSize.height));
 
-    vector<float> weights;
+    //vector<float> weights;
     
-    hog.compute(img, weights, Size(8,8), Size(0,0));
-    int num_features = weights.size();
+    hog.compute(img, feat, Size(8,8), Size(0,0));
+    //int num_features = weights.size();
 
-    //accumulator_set<float, stats<tag::mean, tag::moment<2> > > acc;
-    accumulator_set<float, stats<tag::max, tag::min> > acc;
-    for(int k = 0; k < num_features; ++k)
-        acc(weights[k]);
-    // float mu = boost::accumulators::mean(acc);
-    // float std = sqrt(moment<2>(acc));
-    float xmax = boost::accumulators::max(acc);
-    float xmin = boost::accumulators::min(acc);
+    // //accumulator_set<float, stats<tag::mean, tag::moment<2> > > acc;
+    // accumulator_set<float, stats<tag::max, tag::min> > acc;
+    // for(int k = 0; k < num_features; ++k)
+    //     acc(weights[k]);
+    // // float mu = boost::accumulators::mean(acc);
+    // // float std = sqrt(moment<2>(acc));
+    // float xmax = boost::accumulators::max(acc);
+    // float xmin = boost::accumulators::min(acc);
 
-    for(int i = 0; i < num_features; i++)
-    {
-        //feat.push_back((weights[i]-mu)/std);
-        feat.push_back((weights[i]-xmax)/(xmax-xmin));
-    }
+    // for(int i = 0; i < num_features; i++)
+    // {
+    //     feat.push_back(weights[i]);
+    //     //feat.push_back((weights[i]-xmax)/(xmax-xmin));
+    // }
     
     // Mat test;
     // renderHOG(img, test, extractedFeatures, hog.winSize, hog.cellSize, 1, 1),

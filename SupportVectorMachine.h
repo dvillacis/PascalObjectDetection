@@ -14,15 +14,12 @@
 class SupportVectorMachine
 {
 private:
-    //! LIBSVM model
+    struct svm_parameter _param;     // set by parse_command_line
+    struct svm_problem _prob;        // set by read_problem
     struct svm_model *_model;
+    struct svm_node *_x_space;
 
-    //! LIBSVM node definition
-    svm_node *_data; // Have to keep this around if we want to save the model after training
-    cv::Size _fVecShape; // Shape of feature vector
-
-    //! SVM Parameters
-    svm_parameter _parameter;
+    svm_node *_data;
 
 private:
     //! De allocate memory
@@ -48,7 +45,7 @@ public:
     ~SupportVectorMachine();
 
     //! Train the SVM model
-    void train(const std::vector<float> &labels, const FeatureCollection &fset, std::string svmModelFName);
+    void train(const std::vector<float> &labels, FeatureCollection &features, std::string svmModelFName);
 
     //! Predict the decision value of a feature
     /*! 

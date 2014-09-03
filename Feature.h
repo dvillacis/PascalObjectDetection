@@ -35,7 +35,9 @@ public:
 
     // Extracts descriptor for each image in the database, stores result in FeatureCollection,
     // this is used for training the support vector machine.
-    void operator()(const PascalImageDatabase &db, FeatureCollection &FeatureCollection) const;
+    void operator()(const PascalImageDatabase &db, FeatureCollection &featureCollection) const;
+
+    void scale(FeatureCollection &featureCollection,  FeatureCollection &scaledFeatureCollection);
 
     // Extracts descriptor for each level of imPyr and stores the results in featPyr
     void operator()(const std::vector<Mat> &imPyr, FeatureCollection &featPyr) const;
@@ -90,6 +92,7 @@ public:
     Mat renderHOG(Mat& img, Mat& out, vector<float>& descriptorValues, Size winSize, Size cellSize, int scaleFactor, double viz_factor) const;
 
     double scaleFactor() const { return 1.0 / double(_cellSize); }
+
 };
 
 #endif // FEATURE_H

@@ -18,13 +18,10 @@ ENDIF()
 
 LIST(APPEND CMAKE_CXX_FLAGS "-g")
 
-FIND_PACKAGE(OpenGL REQUIRED)
-
-# # Build subdirectories
-#ADD_SUBDIRECTORY(thirdparty/ImageLib)
+# Build subdirectories
 INCLUDE_DIRECTORIES(thirdparty/)
 
-ADD_SUBDIRECTORY(thirdparty/libsvm-3.14)
+ADD_SUBDIRECTORY(thirdparty/libsvm)
 
 ADD_LIBRARY(od
 	Feature.h                                           Feature.cpp 

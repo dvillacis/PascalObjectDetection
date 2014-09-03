@@ -21,7 +21,7 @@
 #include <cmath>
 #include <stdint.h>
 // Library for Support Vector Machine algo
-#include "libsvm-3.14/svm.h"
+#include "libsvm/svm.h"
 
 // Boost 
 #include <boost/algorithm/string.hpp>
@@ -32,35 +32,6 @@
 
 // Open CV
 #include <opencv2/opencv.hpp>
-
-
-// ============================================================================
-// Needed by Windows
-// ============================================================================
-#if defined(_WIN32) || defined(_WIN64)
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#define strcasecmp _stricmp
-#define strncasecmp _strnicmp
-
-#define NOMINMAX // to get min and max back in windows
-#ifndef GL_BGR
-#define GL_BGR 0x80E0
-#endif
-
-#ifndef GL_BGRA
-#define GL_BGRA 0x80E1
-#endif
-
-#endif
-
-// ============================================================================
-// GUI
-// ============================================================================
-
-// Spacing (in pixels) between elements in the GUI
-static const int DEFAULT_BORDER = 5;
-static const int BOX_WIDTH = 2; // Border around the box that Fl draws (guessing)
 
 // ============================================================================
 // Persistence

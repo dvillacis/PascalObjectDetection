@@ -17,7 +17,7 @@ void printUsage(const std::string &execName)
     printf("Usage:\n");
     printf("\t%s -h\n", execName.c_str());
     printf("\t%s TRAIN      -c <category name> [-p <svm C param>] <in:database> <out:svm model>\n", execName.c_str());
-    printf("\t%s CROSSVAL   -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
+    printf("\t%s VAL        -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
     printf("\t%s TEST       -c <category name> <in:database> <in:svm model> [<out:prcurve.pr>] [<out:database.preds>]\n", execName.c_str());
     printf("\t%s PCA        -c <category name> <in:database> [<out:pca_data.dat>]\n", execName.c_str());
     printf("\t%s DEMO       -c <category name> <in:database> <in:svm model>\n\n", execName.c_str());
@@ -97,9 +97,16 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
         FeatureCollection features;
         (*featExtractor)(db, features);
 
+        LOG(INFO) << "Scaling the feature vector";
+        FeatureCollection scaledFeatures;
+        featExtractor->scale(features,scaledFeatures);
+
+        // Remove features from memory
+        FeatureCollection().swap(features);
+
         LOG(INFO) << "Training SVM";
         SupportVectorMachine svm(svmParams);
-        svm.train(db.getLabels(), features, svmModelFName);
+        svm.train(db.getLabels(), scaledFeatures, svmModelFName);
 
         //saveToFile(svmModelFName, svm);
         LOG(INFO) << "SVM Model saved in: " << svmModelFName;
@@ -116,7 +123,7 @@ int mainSVMTrain(const vector<string> &args, const map<string, string> &opts)
     return EXIT_SUCCESS;
 }
 
-int mainSVMCrossval(const vector<string> &args, const map<string, string> &opts)
+int mainSVMVal(const vector<string> &args, const map<string, string> &opts)
 {
     if(args.size() != 6) {
         throw std::runtime_error("ERROR: Incorrect number of arguments. Run command with flag -h for help.");
@@ -156,8 +163,15 @@ int mainSVMCrossval(const vector<string> &args, const map<string, string> &opts)
             FeatureCollection features;
             (*featExtractor)(db, features);
 
+            LOG(INFO) << "Scaling the feature vector";
+            FeatureCollection scaledFeatures;
+            featExtractor->scale(features,scaledFeatures);
+
+            // Remove features from memory
+            FeatureCollection().swap(features);
+
             LOG(INFO) << "Predicting";
-            vector<float> preds = svm.predict(features);
+            vector<float> preds = svm.predict(scaledFeatures);
             //vector<float> predLabels = svm.predictLabel(features);
 
             LOG(INFO) << "Computing Precision Recall Curve";
@@ -424,8 +438,8 @@ int main(int argc, char **argv)
         }
         if (strcasecmp(args[1].c_str(), "TRAIN") == 0) {
             return mainSVMTrain(args, opts);
-        } else if (strcasecmp(args[1].c_str(), "CROSSVAL") == 0) {
-            return mainSVMCrossval(args, opts);
+        } else if (strcasecmp(args[1].c_str(), "VAL") == 0) {
+            return mainSVMVal(args, opts);
         } else if (strcasecmp(args[1].c_str(), "TEST") == 0) {
             return mainSVMTest(args, opts);
         } else if (strcasecmp(args[1].c_str(), "PCA") == 0) {
